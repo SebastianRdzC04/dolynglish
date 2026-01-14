@@ -1,21 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { Readable } from 'node:stream'
-import { AIService, ChatMessage } from '../types/ia_connector.js'
-import { groqService } from '#services/ia/groq.service'
+import { ChatMessage } from '../types/ia_connector.js'
+import { iaHttpService } from '#services/ia/http.service'
+import TextService from '#services/text.service'
+import { inject } from '@adonisjs/core'
 
+@inject()
 export default class IasController {
-  private services: AIService[] = [groqService]
-
-  private currentServiceIndex = 0
-
-  private getNextService() {
-    const service = this.services[this.currentServiceIndex]
-    this.currentServiceIndex = (this.currentServiceIndex + 1) % this.services.length
-    return service
-  }
-
+  constructor(private textService: TextService) {}
   async mensaje({ request, response }: HttpContext) {
-    const service = this.getNextService()
     const { message } = request.body() as { message: string }
     const messages: ChatMessage[] = [
       {
@@ -25,17 +17,12 @@ export default class IasController {
       },
       { role: 'user', content: message },
     ]
-    const stream = await service.chat(messages)
 
-    response.header('Content-Type', 'text/event-stream')
-    response.header('Cache-Control', 'no-cache')
-    response.header('Connection', 'keep-alive')
-
-    return response.stream(Readable.from(stream))
+    return iaHttpService.streamChat(messages, response)
   }
 
-  async generateText({ response }: HttpContext) {
-    const service = this.getNextService()
+  async generateText({ response, auth }: HttpContext) {
+    const user = auth.user!
 
     const messages: ChatMessage[] = [
       {
@@ -71,12 +58,8 @@ Rules:
       },
     ]
 
-    const stream = await service.chat(messages)
-
-    response.header('Content-Type', 'text/event-stream')
-    response.header('Cache-Control', 'no-cache')
-    response.header('Connection', 'keep-alive')
-
-    return response.stream(Readable.from(stream))
+    return iaHttpService.streamChatWithCallback(messages, response, async (fullText) => {
+      await this.textService.saveGeneratedText(user.id, fullText)
+    })
   }
 }
