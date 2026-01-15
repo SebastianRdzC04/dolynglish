@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dolynglish_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_INITDB_ARGS: "-c max_connections=100"
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./database/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dolynglish_network
+
+volumes:
+  postgres_data_test:
+
+networks:
+  dolynglish_network:
+    driver: bridge
