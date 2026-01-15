@@ -1,7 +1,7 @@
 services:
-  database-postgres:
+  database-postgres-dolynglish:
     image: postgres:15
-    container_name: database-postgres
+    container_name: database-postgres-dolynglish
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -15,7 +15,7 @@ services:
       - dolynglish-network
     restart: always
 
-  backend:
+  backend-dolynglish:
     build:
       context: ../backend
       dockerfile: Dockerfile
@@ -40,7 +40,7 @@ services:
     networks:
       - dolynglish-network
     depends_on:
-      - database-postgres
+      - database-postgres-dolynglish
 
 volumes:
   postgres-data:
