@@ -1,61 +1,88 @@
-import { Text, View, StyleSheet, Pressable } from "react-native";
-import { router } from "expo-router";
+import { Text, View, StyleSheet, ScrollView } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useSession } from "@/context/AuthContext";
+import StreakBadge from "@/Components/StreakBadge";
 
 export default function Index() {
   const { user } = useSession();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.greeting}>
-        ¡Hola, {user?.fullName?.split(" ")[0] || "Usuario"}! 👋
-      </Text>
-      <Text style={styles.text}>Bienvenido a Dolynglish</Text>
-      <Pressable
-        style={({ pressed }) => [
-          styles.button,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={() => router.push("/more")}
-      >
-        <Text style={styles.buttonText}>Ir a More</Text>
-      </Pressable>
-    </View>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={styles.container}>
+        {/* Header con saludo */}
+        <View style={styles.header}>
+          <Text style={styles.greeting}>
+            ¡Hola, {user?.fullName?.split(" ")[0] || "Usuario"}! 👋
+          </Text>
+          <Text style={styles.subtitle}>Continúa aprendiendo</Text>
+        </View>
+
+        {/* Streak Badge */}
+        <StreakBadge />
+
+        {/* Espacio para más contenido */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Continuar aprendiendo</Text>
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>
+              Próximas lecciones aquí...
+            </Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
     backgroundColor: Colors.background.primary,
-    alignItems: "center",
-    justifyContent: "center",
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 24,
+  },
+  header: {
+    gap: 4,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    color: Colors.accent.primary,
-    marginBottom: 8,
-  },
-  text: {
     color: Colors.text.primary,
-    fontSize: 16,
-    marginBottom: 24,
   },
-  button: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  subtitle: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+  },
+  section: {
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.text.primary,
+  },
+  placeholder: {
     backgroundColor: Colors.background.secondary,
-    borderRadius: 8,
+    borderRadius: 12,
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: Colors.accent.primary,
+    borderColor: Colors.border.light,
+    borderStyle: "dashed",
   },
-  buttonPressed: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 16,
-    color: Colors.accent.primary,
+  placeholderText: {
+    color: Colors.text.secondary,
+    fontSize: 14,
   },
 });
