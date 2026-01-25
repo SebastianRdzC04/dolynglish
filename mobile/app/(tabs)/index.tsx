@@ -2,6 +2,7 @@ import { Text, View, StyleSheet, ScrollView } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useSession } from "@/context/AuthContext";
 import StreakBadge from "@/Components/StreakBadge";
+import ReadingCard from "@/Components/ReadingCard";
 
 export default function Index() {
   const { user } = useSession();
@@ -23,13 +24,34 @@ export default function Index() {
         {/* Streak Badge */}
         <StreakBadge />
 
-        {/* Espacio para más contenido */}
+        {/* Lecturas disponibles */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Continuar aprendiendo</Text>
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>
-              Próximas lecciones aquí...
-            </Text>
+          <View style={styles.readingsContainer}>
+            <ReadingCard
+              title="The Lost City of Machu Picchu"
+              wordCount={350}
+              difficulty="easy"
+              category="Viajes"
+              estimatedTime={5}
+              onPress={() => console.log("Abrir lectura 1")}
+            />
+            <ReadingCard
+              title="The Future of Artificial Intelligence in Healthcare"
+              wordCount={720}
+              difficulty="medium"
+              category="Tecnología"
+              estimatedTime={10}
+              onPress={() => console.log("Abrir lectura 2")}
+            />
+            <ReadingCard
+              title="Quantum Physics: Understanding the Uncertainty Principle"
+              wordCount={1200}
+              difficulty="hard"
+              category="Ciencia"
+              estimatedTime={15}
+              onPress={() => console.log("Abrir lectura 3")}
+            />
           </View>
         </View>
       </View>
@@ -71,18 +93,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Colors.text.primary,
   },
-  placeholder: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 12,
-    padding: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.border.light,
-    borderStyle: "dashed",
-  },
-  placeholderText: {
-    color: Colors.text.secondary,
-    fontSize: 14,
+  readingsContainer: {
+    gap: 12,
   },
 });
