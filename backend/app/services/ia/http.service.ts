@@ -48,6 +48,21 @@ class IAHttpService {
 
     return response.stream(Readable.from(wrappedStream()))
   }
+
+  /**
+   * Obtiene una respuesta completa (sin streaming) de la IA
+   */
+  async getFullResponse(messages: ChatMessage[]): Promise<string> {
+    const service = this.getNextService()
+    const stream = await service.chat(messages)
+
+    let fullText = ''
+    for await (const chunk of stream) {
+      fullText += chunk
+    }
+
+    return fullText
+  }
 }
 
 export const iaHttpService = new IAHttpService()

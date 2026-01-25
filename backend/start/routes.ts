@@ -13,22 +13,57 @@ import { middleware } from './kernel.js'
 const IasController = () => import('#controllers/ias_controller')
 const AuthController = () => import('#controllers/auth_controller')
 
+// Health check
 router.get('/', async () => {
   return {
-    hello: 'world',
+    message: 'Dolynglish API is running',
+    data: {
+      version: '1.0.0',
+      status: 'healthy',
+    },
   }
 })
-router.post('/mensaje', [IasController, 'mensaje'])
-router
-  .get('/generate-text', [IasController, 'generateText'])
-  .use(middleware.auth({ guards: ['api'] }))
-router
-  .post('/response-text/:id', [IasController, 'responseText'])
-  .use(middleware.auth({ guards: ['api'] }))
 
+// Endpoint de prueba de IA (sin autenticación)
+router.post('/mensaje', [IasController, 'mensaje'])
+
+// Rutas de autenticación
 router
   .group(() => {
     router.post('/login', [AuthController, 'login'])
     router.post('/register', [AuthController, 'register'])
   })
   .prefix('/auth')
+
+// Opciones de generación (público, sin autenticación)
+router.get('/readings/options', [IasController, 'getGenerationOptions'])
+
+// Rutas protegidas de lecturas
+router
+  .group(() => {
+    // Generar nuevo texto de lectura
+    // Query params opcionales: category, size, timePeriod, seed
+    router.post('/generate', [IasController, 'generateText'])
+
+    // Obtener lecturas pendientes del usuario
+    router.get('/pending', [IasController, 'getPendingReadings'])
+
+    // Obtener lecturas completadas del usuario
+    router.get('/completed', [IasController, 'getCompletedReadings'])
+
+    // Obtener una lectura específica
+    router.get('/:id', [IasController, 'getReading'])
+
+    // Enviar respuesta de comprensión para evaluación
+    router.post('/:id/evaluate', [IasController, 'responseText'])
+  })
+  .prefix('/readings')
+  .use(middleware.auth({ guards: ['api'] }))
+
+// Mantener rutas legacy para compatibilidad (deprecated)
+router
+  .get('/generate-text', [IasController, 'generateText'])
+  .use(middleware.auth({ guards: ['api'] }))
+router
+  .post('/response-text/:id', [IasController, 'responseText'])
+  .use(middleware.auth({ guards: ['api'] }))
