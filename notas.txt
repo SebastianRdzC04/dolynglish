@@ -20,6 +20,14 @@ PROXIMAS ACTUALIZACIONES:
         - Agregar un sistema de notificaciones. entenderlas como funcionan para poder 
         implementar un sistema de notificaciones como duolingo
         - Agregar en el apartado de perfil otra card que aparte de mostrar las lecturas completadas
+        - Agregar la funcionalidad en la lectura para poder consultar la definicion de las palabras. una funcionalidad 
+        para consultar la definicion y guardar un glosario de palabras con su definicion.
+        - Tambien extender la funcionalidad anterior a poder guardar otraciones completas para poder consultar su significado de 
+        la oracion completa
+        - Crear la seccion de glosario con su apartado de palabras y apartado de oraciones. (los significados no seran tradicciones, mas bien explicaciones mas extendas contextos etc etc)
+        - Arreglar el bug que hay en las categorias de las lecturas (algunos no muestra el genero correctamente y lo muestra como tecnologia)
+        - Arreglar bugs visuales en la lectura del texto. al final en algunos dispositivos se sobrepone el boton de contestar a la historia 
+
         muestre tambien cuantas lecturas se pasaron y cuantas de reprobaron.
         DESPUES DE LA ACTUALIZACION AL BACKEND.
         - Agregar el poder leer las respuestas de las lecturas y tambien
