@@ -1,9 +1,9 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
 import * as SystemUI from "expo-system-ui";
 import { Colors } from "@/constants/Colors";
-import { SessionProvider, useSession } from "@/context/AuthContext";
+import { SessionProvider, useSession } from "@/src/features/auth";
+import { Loading } from "@/src/shared/components/ui";
 
 // Establecer el color de fondo del root view para las transiciones
 SystemUI.setBackgroundColorAsync(Colors.background.primary);
@@ -28,11 +28,7 @@ function RootLayoutNav() {
   }, [session, segments, isLoading]);
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.accent.primary} />
-      </View>
-    );
+    return <Loading fullScreen />;
   }
 
   return (
@@ -65,12 +61,3 @@ export default function RootLayout() {
     </SessionProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.background.primary,
-  },
-});

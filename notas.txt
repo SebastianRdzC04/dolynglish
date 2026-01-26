@@ -1,0 +1,3 @@
+notas para la generacion
+    En la ia. si la dificultad del texto a generar es un texto dificil. mejor buscar articulos o textos reales y mostrarlos
+    no generarlos si no buscarlos

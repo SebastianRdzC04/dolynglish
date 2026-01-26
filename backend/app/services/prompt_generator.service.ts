@@ -81,20 +81,6 @@ export default class PromptGeneratorService {
       ],
     },
     {
-      id: 'science',
-      name: 'Science',
-      supportsTimePeriod: true,
-      subcategories: [
-        { id: 'astronomy', name: 'Astronomy and Space', keywords: ['planets', 'stars', 'universe'] },
-        { id: 'biology', name: 'Biology', keywords: ['organisms', 'cells', 'life'] },
-        { id: 'physics', name: 'Physics', keywords: ['energy', 'matter', 'forces'] },
-        { id: 'chemistry', name: 'Chemistry', keywords: ['elements', 'reactions', 'molecules'] },
-        { id: 'environment', name: 'Environmental Science', keywords: ['climate', 'ecosystems', 'sustainability'] },
-        { id: 'genetics', name: 'Genetics', keywords: ['DNA', 'heredity', 'evolution'] },
-        { id: 'neuroscience', name: 'Neuroscience', keywords: ['brain', 'neurons', 'cognition'] },
-      ],
-    },
-    {
       id: 'history',
       name: 'History',
       supportsTimePeriod: true,
@@ -137,19 +123,6 @@ export default class PromptGeneratorService {
       ],
     },
     {
-      id: 'health',
-      name: 'Health',
-      supportsTimePeriod: false,
-      subcategories: [
-        { id: 'nutrition', name: 'Nutrition', keywords: ['diet', 'vitamins', 'metabolism'] },
-        { id: 'mental', name: 'Mental Health', keywords: ['anxiety', 'depression', 'wellbeing'] },
-        { id: 'exercise', name: 'Exercise and Fitness', keywords: ['workouts', 'strength', 'cardio'] },
-        { id: 'sleep', name: 'Sleep Science', keywords: ['rest', 'circadian', 'dreams'] },
-        { id: 'preventive', name: 'Preventive Medicine', keywords: ['vaccines', 'checkups', 'lifestyle'] },
-        { id: 'aging', name: 'Healthy Aging', keywords: ['longevity', 'wellness', 'vitality'] },
-      ],
-    },
-    {
       id: 'culture',
       name: 'Culture',
       supportsTimePeriod: true,
@@ -161,6 +134,25 @@ export default class PromptGeneratorService {
         { id: 'cinema', name: 'Cinema', keywords: ['films', 'directors', 'genres'] },
         { id: 'gastronomy', name: 'Gastronomy', keywords: ['cuisine', 'recipes', 'ingredients'] },
         { id: 'architecture', name: 'Architecture', keywords: ['buildings', 'styles', 'design'] },
+      ],
+    },
+    {
+      id: 'pop_culture',
+      name: 'Pop Culture',
+      supportsTimePeriod: true,
+      subcategories: [
+        { id: 'anime_manga', name: 'Anime and Manga', keywords: ['shonen', 'studio ghibli', 'naruto', 'one piece', 'attack on titan', 'dragon ball'] },
+        { id: 'disney', name: 'Disney', keywords: ['animated films', 'pixar', 'princesses', 'theme parks', 'classics'] },
+        { id: 'marvel', name: 'Marvel Universe', keywords: ['superheroes', 'avengers', 'comics', 'MCU', 'spider-man'] },
+        { id: 'dc', name: 'DC Universe', keywords: ['batman', 'superman', 'justice league', 'comics', 'dceu'] },
+        { id: 'pixar', name: 'Pixar Animation', keywords: ['toy story', 'finding nemo', 'inside out', 'animation technology'] },
+        { id: 'dreamworks', name: 'DreamWorks Animation', keywords: ['shrek', 'how to train your dragon', 'kung fu panda', 'madagascar'] },
+        { id: 'gaming', name: 'Video Games', keywords: ['nintendo', 'playstation', 'esports', 'minecraft', 'fortnite'] },
+        { id: 'youtubers', name: 'YouTubers and Content Creators', keywords: ['vegetta777', 'elrubius', 'quackity', 'auronplay'] },
+        { id: 'kpop', name: 'K-Pop and Asian Pop Culture', keywords: ['korean dramas', 'kdrama'] },
+        { id: 'fun_facts', name: 'Fun Facts and Trivia', keywords: ['curiosities', 'surprising facts', 'behind the scenes', 'easter eggs'] },
+        { id: 'memes', name: 'Internet Culture and Memes', keywords: ['viral trends', 'social media', 'internet phenomena'] },
+        { id: 'scifi_fantasy', name: 'Sci-Fi and Fantasy Franchises', keywords: ['star wars', 'harry potter', 'lord of the rings', 'game of thrones'] },
       ],
     },
   ]
@@ -224,19 +216,19 @@ export default class PromptGeneratorService {
       id: '1980s',
       name: 'the 1980s',
       yearRange: [1980, 1989],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: '1990s',
       name: 'the 1990s',
       yearRange: [1990, 1999],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: '2000s',
       name: 'the 2000s',
       yearRange: [2000, 2010],
-      applicableCategories: ['technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['technology', 'science', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: 'modern_computing',
@@ -248,7 +240,7 @@ export default class PromptGeneratorService {
       id: 'present',
       name: 'present day',
       yearRange: [2015, 2026],
-      applicableCategories: ['technology', 'science', 'health', 'education', 'programming', 'culture'],
+      applicableCategories: ['technology', 'science', 'health', 'education', 'programming', 'culture', 'pop_culture'],
     },
   ]
 
@@ -351,6 +343,18 @@ export default class PromptGeneratorService {
       'social and political context',
       'cross-cultural comparisons',
       'preservation and future challenges',
+    ],
+    pop_culture: [
+      'behind-the-scenes secrets and fun facts',
+      'the creative minds and studios behind it',
+      'its cultural impact and global influence',
+      'interesting trivia fans might not know',
+      'how it revolutionized its genre',
+      'memorable characters and why fans love them',
+      'connections between different franchises',
+      'the evolution from original to modern adaptations',
+      'fan theories and hidden meanings',
+      'record-breaking achievements and milestones',
     ],
   }
 

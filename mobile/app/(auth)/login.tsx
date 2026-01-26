@@ -12,7 +12,7 @@ import {
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Colors } from "@/constants/Colors";
-import { useSession } from "@/context/AuthContext";
+import { useSession } from "@/src/features/auth";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function LoginScreen() {

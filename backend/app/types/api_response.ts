@@ -25,6 +25,7 @@ export type TextCategory =
   | 'programming'
   | 'health'
   | 'culture'
+  | 'pop_culture'
 
 /**
  * Niveles de dificultad
