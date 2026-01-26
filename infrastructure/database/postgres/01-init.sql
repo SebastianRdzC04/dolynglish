@@ -4,6 +4,8 @@ CREATE TABLE users (
   full_name VARCHAR(255),
   email VARCHAR(254) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
+  current_streak INTEGER NOT NULL DEFAULT 0,
+  last_streak_date DATE,
   created_at TIMESTAMP NOT NULL,
   updated_at TIMESTAMP,
   deleted_at TIMESTAMP

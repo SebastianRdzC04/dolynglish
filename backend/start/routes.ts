@@ -12,6 +12,7 @@ import { middleware } from './kernel.js'
 
 const IasController = () => import('#controllers/ias_controller')
 const AuthController = () => import('#controllers/auth_controller')
+const UserController = () => import('#controllers/user_controller')
 
 // Health check
 router.get('/', async () => {
@@ -37,6 +38,22 @@ router
 
 // Opciones de generación (público, sin autenticación)
 router.get('/readings/options', [IasController, 'getGenerationOptions'])
+
+// Rutas de perfil de usuario
+router
+  .group(() => {
+    // Perfil del usuario autenticado
+    router.get('/profile', [UserController, 'getProfile'])
+
+    // Datos de racha del usuario
+    // Query params: days (opcional, default 10, max 30)
+    router.get('/streak', [UserController, 'getStreak'])
+
+    // Perfil completo con streak (combinado para optimizar requests)
+    router.get('/me', [UserController, 'getMe'])
+  })
+  .prefix('/user')
+  .use(middleware.auth({ guards: ['api'] }))
 
 // Rutas protegidas de lecturas
 router

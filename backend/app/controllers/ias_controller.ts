@@ -4,6 +4,7 @@ import { iaHttpService } from '#services/ia/http.service'
 import TextService from '#services/text.service'
 import PromptGeneratorService from '#services/prompt_generator.service'
 import PromptLogService from '#services/prompt_log.service'
+import StreakService from '#services/streak.service'
 import { inject } from '@adonisjs/core'
 import { generateTextValidator } from '#validators/reading'
 import type {
@@ -14,13 +15,15 @@ import type {
   ReadingDto,
 } from '../types/api_response.js'
 import type { GenerationOptionsResponse } from '../types/prompt_generator.js'
+import type { StreakEvaluationData } from '../types/streak.js'
 
 @inject()
 export default class IasController {
   constructor(
     private textService: TextService,
     private promptGenerator: PromptGeneratorService,
-    private logService: PromptLogService
+    private logService: PromptLogService,
+    private streakService: StreakService
   ) {}
 
   async mensaje({ request, response }: HttpContext) {
@@ -245,6 +248,22 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
         Date.now() - startTime
       )
 
+      // Actualizar racha si el usuario pasó la evaluación
+      let streakData: StreakEvaluationData | null = null
+      if (evaluation.passed) {
+        try {
+          const streakResult = await this.streakService.updateStreakOnPass(user.id)
+          streakData = {
+            currentStreak: streakResult.newStreak,
+            streakExtended: streakResult.streakExtended,
+            todayCompleted: true,
+          }
+        } catch (streakError) {
+          // Log error pero no fallar la respuesta
+          console.error('Error updating streak:', streakError)
+        }
+      }
+
       return response.ok({
         message: evaluation.passed
           ? 'Congratulations! You passed the comprehension test.'
@@ -254,6 +273,7 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
           passed: evaluation.passed,
           feedback: evaluation.feedback,
           reading: updatedText.toReadingDto(),
+          ...(streakData && { streak: streakData }),
         },
       } as ApiResponse)
     } catch (error) {
