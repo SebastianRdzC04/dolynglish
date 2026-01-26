@@ -6,6 +6,28 @@ import type { TextCategory } from './api_response.js'
 export type TextSize = 'short' | 'medium' | 'long'
 
 /**
+ * Niveles de dificultad que el usuario puede solicitar
+ */
+export type DifficultyLevel = 'easy' | 'medium' | 'hard'
+
+/**
+ * Niveles CEFR del Marco Común Europeo
+ */
+export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
+
+/**
+ * Configuración de dificultad con niveles CEFR correspondientes
+ */
+export interface DifficultyConfig {
+  id: DifficultyLevel
+  label: string
+  cefrLevels: [CEFRLevel, CEFRLevel]
+  description: string
+  vocabularyGuidelines: string
+  grammarGuidelines: string
+}
+
+/**
  * Configuración de un tamaño de texto
  */
 export interface TextSizeConfig {
@@ -90,6 +112,7 @@ export interface RandomPromptParams {
   timePeriod?: TimePeriod
   specificYear?: number
   textSize: TextSizeConfig
+  difficulty: DifficultyConfig
   contentType: ContentType
   perspective: ContentPerspective
   geographicContext?: GeographicRegion
@@ -102,6 +125,7 @@ export interface RandomPromptParams {
 export interface GenerateTextOptions {
   category?: TextCategory
   size?: TextSize
+  difficulty?: DifficultyLevel
   timePeriod?: string
   seed?: string
 }

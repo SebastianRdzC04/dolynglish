@@ -123,6 +123,8 @@ export default class IasController {
             category: generatedPrompt.params.primaryCategory,
             subcategories: generatedPrompt.params.subcategories,
             size: generatedPrompt.params.textSize.label,
+            difficulty: generatedPrompt.params.difficulty.id,
+            cefrLevel: generatedPrompt.params.difficulty.cefrLevels.join('-'),
             timePeriod: generatedPrompt.params.timePeriod?.name,
             contentType: generatedPrompt.params.contentType,
           },

@@ -9,6 +9,7 @@ export const generateTextValidator = vine.compile(
       .enum(['technology', 'science', 'history', 'education', 'programming', 'health', 'culture'])
       .optional(),
     size: vine.enum(['short', 'medium', 'long']).optional(),
+    difficulty: vine.enum(['easy', 'medium', 'hard']).optional(),
     timePeriod: vine.string().optional(),
     seed: vine.string().optional(),
   })
@@ -20,6 +21,7 @@ export const generateTextValidator = vine.compile(
 export type GenerateTextInput = {
   category?: 'technology' | 'science' | 'history' | 'education' | 'programming' | 'health' | 'culture'
   size?: 'short' | 'medium' | 'long'
+  difficulty?: 'easy' | 'medium' | 'hard'
   timePeriod?: string
   seed?: string
 }

@@ -1,22 +1,36 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Colors } from "@/constants/Colors";
 import WeeklyProgress from "./WeeklyProgress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-// Calcula el índice del día actual (Lunes = 0, Domingo = 6)
-function getTodayIndex(): number {
-  const day = new Date().getDay(); // 0 = Domingo, 1 = Lunes, ...
-  return day === 0 ? 6 : day - 1; // Convertir: Lunes = 0, Domingo = 6
+interface StreakBadgeProps {
+  /** Número de días de racha actual */
+  currentStreak: number;
+  /** Array de 7 booleanos [L, M, X, J, V, S, D] indicando días completados */
+  completedDays: boolean[];
+  /** Índice del día actual (0 = Lunes, 6 = Domingo) */
+  todayIndex: number;
+  /** Si está cargando los datos */
+  isLoading?: boolean;
 }
 
-export default function StreakBadge() {
-  // TODO: Estos datos vendrán de StreakContext/API/LocalStorage
-  // Por ahora son datos mock
-  const currentStreak = 1;
-  const completedDays = [true, true, false, false, false, false, false]; // [L, M, X, J, V, S, D]
-
+export default function StreakBadge({
+  currentStreak,
+  completedDays,
+  todayIndex,
+  isLoading = false,
+}: StreakBadgeProps) {
   const isStreakActive = currentStreak > 0;
-  const todayIndex = getTodayIndex();
+  const todayCompleted = completedDays[todayIndex] ?? false;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="small" color={Colors.accent.primary} />
+        <Text style={styles.loadingText}>Cargando racha...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -61,7 +75,7 @@ export default function StreakBadge() {
       </View>
 
       {/* Mensaje motivacional */}
-      {!completedDays[todayIndex] && (
+      {!todayCompleted && (
         <View style={styles.reminderContainer}>
           <Ionicons
             name="notifications-outline"
@@ -84,6 +98,17 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: Colors.border.light,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    minHeight: 120,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
   },
   header: {
     flexDirection: "row",

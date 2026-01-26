@@ -4,6 +4,8 @@ export interface User {
   id: number;
   fullName: string;
   email: string;
+  currentStreak?: number;
+  lastStreakDate?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

@@ -13,6 +13,8 @@ import type {
   GenerateTextOptions,
   GeneratedPrompt,
   GenerationOptionsResponse,
+  DifficultyLevel,
+  DifficultyConfig,
 } from '../types/prompt_generator.js'
 
 @inject()
@@ -27,6 +29,39 @@ export default class PromptGeneratorService {
     short: { min: 80, max: 120, label: 'short', readingTime: '~1 min' },
     medium: { min: 150, max: 220, label: 'medium', readingTime: '~2 min' },
     long: { min: 250, max: 350, label: 'long', readingTime: '~3 min' },
+  }
+
+  /**
+   * Configuración de niveles de dificultad mapeados a CEFR
+   * - easy: A1-A2 (Beginner/Elementary)
+   * - medium: B1-B2 (Intermediate/Upper-Intermediate)
+   * - hard: C1-C2 (Advanced/Proficiency)
+   */
+  private static readonly DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyConfig> = {
+    easy: {
+      id: 'easy',
+      label: 'Beginner',
+      cefrLevels: ['A1', 'A2'],
+      description: 'A1-A2 level (Beginner to Elementary)',
+      vocabularyGuidelines: 'Use only basic, everyday vocabulary (around 500-1000 most common words). Avoid idioms, phrasal verbs, and technical terms.',
+      grammarGuidelines: 'Use simple present, simple past, and simple future. Short sentences (8-12 words). Avoid complex structures like conditionals, passive voice, or relative clauses.',
+    },
+    medium: {
+      id: 'medium',
+      label: 'Intermediate',
+      cefrLevels: ['B1', 'B2'],
+      description: 'B1-B2 level (Intermediate to Upper-Intermediate)',
+      vocabularyGuidelines: 'Use intermediate vocabulary with some less common words. Include common idioms and phrasal verbs. Topic-specific vocabulary is acceptable with context.',
+      grammarGuidelines: 'Use a variety of tenses including perfect tenses and conditionals. Medium-length sentences (12-20 words). Can include passive voice and relative clauses.',
+    },
+    hard: {
+      id: 'hard',
+      label: 'Advanced',
+      cefrLevels: ['C1', 'C2'],
+      description: 'C1-C2 level (Advanced to Proficiency)',
+      vocabularyGuidelines: 'Use sophisticated vocabulary including academic and specialized terms. Include idiomatic expressions, collocations, and nuanced word choices.',
+      grammarGuidelines: 'Use complex grammatical structures freely: mixed conditionals, subjunctive, cleft sentences, inversion. Longer, compound-complex sentences are encouraged.',
+    },
   }
 
   private static readonly CATEGORIES: CategoryConfig[] = [
@@ -430,6 +465,11 @@ export default class PromptGeneratorService {
       ? PromptGeneratorService.TEXT_SIZES[options.size]
       : this.selectRandomSize()
 
+    // Seleccionar dificultad (si no se especifica, elegir aleatoriamente)
+    const difficulty = options?.difficulty
+      ? PromptGeneratorService.DIFFICULTY_LEVELS[options.difficulty]
+      : this.selectRandomDifficulty()
+
     // Seleccionar período temporal (solo si la categoría lo soporta)
     let timePeriod: TimePeriod | undefined
     let specificYear: number | undefined
@@ -466,6 +506,7 @@ export default class PromptGeneratorService {
       timePeriod,
       specificYear,
       textSize,
+      difficulty,
       contentType,
       perspective,
       geographicContext,
@@ -499,6 +540,11 @@ export default class PromptGeneratorService {
   private selectRandomSize(): TextSizeConfig {
     const sizes = Object.values(PromptGeneratorService.TEXT_SIZES)
     return this.randomElement(sizes)
+  }
+
+  private selectRandomDifficulty(): DifficultyConfig {
+    const difficulties = Object.values(PromptGeneratorService.DIFFICULTY_LEVELS)
+    return this.randomElement(difficulties)
   }
 
   private selectRandomContentType(): ContentType {
@@ -602,9 +648,14 @@ GEOGRAPHIC SCOPE:
     prompt += `
 TEXT SPECIFICATIONS:
 - Length: ${params.textSize.min}-${params.textSize.max} words (${params.textSize.label} length)
-- Level: B1-B2 (intermediate English learner)
 - Style: Informative and explanatory, like a short article
 - Tone: Neutral and engaging
+
+LANGUAGE LEVEL REQUIREMENTS (CRITICAL - THIS IS THE DIFFICULTY):
+- Target level: ${params.difficulty.description}
+- The output "difficulty" field MUST be "${params.difficulty.id}"
+- VOCABULARY: ${params.difficulty.vocabularyGuidelines}
+- GRAMMAR: ${params.difficulty.grammarGuidelines}
 
 STRICT RULES:
 - Do NOT tell a story or create characters
@@ -643,6 +694,9 @@ STRICT RULES:
     // Tamaño
     parts.push(params.textSize.label.slice(0, 3))
 
+    // Dificultad (abreviada: eas, med, har)
+    parts.push(params.difficulty.id.slice(0, 3))
+
     // Tipo de contenido (abreviado)
     const contentAbbr = params.contentType.split('_')[0].slice(0, 4)
     parts.push(contentAbbr)
@@ -660,7 +714,7 @@ STRICT RULES:
   private parseSeed(seed: string): RandomPromptParams {
     const parts = seed.split('_')
 
-    if (parts.length < 5) {
+    if (parts.length < 6) {
       throw new Error('Invalid seed format')
     }
 
@@ -668,6 +722,7 @@ STRICT RULES:
     const categoryAbbr = parts[0]
     const timePeriodId = parts[2]
     const sizeAbbr = parts[3]
+    const difficultyAbbr = parts[4]
 
     // Encontrar categoría
     const category = PromptGeneratorService.CATEGORIES.find((c) =>
@@ -683,6 +738,14 @@ STRICT RULES:
     )
     if (!size) {
       throw new Error('Invalid size in seed')
+    }
+
+    // Encontrar dificultad
+    const difficulty = Object.values(PromptGeneratorService.DIFFICULTY_LEVELS).find((d) =>
+      d.id.startsWith(difficultyAbbr)
+    )
+    if (!difficulty) {
+      throw new Error('Invalid difficulty in seed')
     }
 
     // Encontrar período temporal
@@ -703,6 +766,7 @@ STRICT RULES:
       timePeriod,
       specificYear: timePeriod ? this.selectRandomYear(timePeriod) : undefined,
       textSize: size,
+      difficulty,
       contentType: this.selectRandomContentType(),
       perspective: this.selectRandomPerspective(),
       geographicContext: this.shouldInclude(0.3) ? this.selectRandomGeographicContext() : undefined,
