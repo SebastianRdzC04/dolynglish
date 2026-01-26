@@ -116,8 +116,7 @@ export default class StreakService {
       }
     }
 
-    const todayCompleted =
-      user.lastStreakDate?.startOf('day').toISODate() === today.toISODate()
+    const todayCompleted = user.lastStreakDate?.startOf('day').toISODate() === today.toISODate()
 
     return {
       currentStreak: user.currentStreak ?? 0,

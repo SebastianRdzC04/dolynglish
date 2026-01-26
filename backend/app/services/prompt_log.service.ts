@@ -1,11 +1,11 @@
 import { inject } from '@adonisjs/core'
 import PromptLogRepository from '../repository/prompt_log.repository.js'
+import type { PromptLogDto, PromptLogFilters, PromptLogStats } from '../types/prompt_log.js'
 import type {
-  PromptLogDto,
-  PromptLogFilters,
-  PromptLogStats,
-} from '../types/prompt_log.js'
-import type { RandomPromptParams, GeneratedPrompt, GenerateTextOptions } from '../types/prompt_generator.js'
+  RandomPromptParams,
+  GeneratedPrompt,
+  GenerateTextOptions,
+} from '../types/prompt_generator.js'
 
 @inject()
 export default class PromptLogService {
@@ -92,11 +92,7 @@ export default class PromptLogService {
   /**
    * Log cuando falla guardar el texto
    */
-  async logTextSaveFailed(
-    error: Error,
-    seed: string,
-    userId: number
-  ): Promise<void> {
+  async logTextSaveFailed(error: Error, seed: string, userId: number): Promise<void> {
     try {
       await this.repository.create({
         level: 'error',
@@ -140,11 +136,7 @@ export default class PromptLogService {
   /**
    * Log cuando falla la evaluación
    */
-  async logEvaluationFailed(
-    error: Error,
-    textId: number,
-    userId: number
-  ): Promise<void> {
+  async logEvaluationFailed(error: Error, textId: number, userId: number): Promise<void> {
     try {
       await this.repository.create({
         level: 'error',

@@ -1,3 +1,29 @@
 notas para la generacion
     En la ia. si la dificultad del texto a generar es un texto dificil. mejor buscar articulos o textos reales y mostrarlos
     no generarlos si no buscarlos
+
+PROXIMAS ACTUALIZACIONES: 
+    API:
+        - Guardar la respuesta del usuario de cada texto generado.
+        - Guardar tambien la retroalimentacion generada por la ia
+        - verificar que la racha funciona correctamente y agregar un cron 
+        para que todos los dias a las 12 verrifique el estado de las rachas
+        - Agregar el tono del texto a las opciones de generacion ej.(divertido, serio, formal)
+        - verfificar la seguridad del backend. que no haya problemas con los permisos
+        y los poderes de cada usuario. 
+        - Arreglar bug de generacion de niveles de dificultad en los textos generados
+    MOBILE:
+        - Eliminar el bug del boton a la hora de responder y fallar en un texto. quitar
+        el boton de regresar a la lectura para volverla a contestar porque no se puede contestar.
+        - agregar la validacion de que solo se pueda cargar la pagina para responder textos a 
+        textos que aun no esten respondidos.
+        - Agregar un sistema de notificaciones. entenderlas como funcionan para poder 
+        implementar un sistema de notificaciones como duolingo
+        - Agregar en el apartado de perfil otra card que aparte de mostrar las lecturas completadas
+        muestre tambien cuantas lecturas se pasaron y cuantas de reprobaron.
+        DESPUES DE LA ACTUALIZACION AL BACKEND.
+        - Agregar el poder leer las respuestas de las lecturas y tambien
+        ver de nuevo la retroalimentacion generada por la IA 
+        - Mejorar el bug visual en el boton para de generar una historia.
+        en vez de que desaparezca cuando ya hayan 3 historias solo se deshabilite.
+        - Mover boton de generar historias hasta arriba de la seccion de las lecturas. no abajo

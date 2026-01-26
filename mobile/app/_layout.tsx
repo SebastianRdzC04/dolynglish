@@ -50,6 +50,7 @@ function RootLayoutNav() {
         options={{ headerShown: false, title: "Inicio" }}
       />
       <Stack.Screen name="reading" options={{ headerShown: false }} />
+      <Stack.Screen name="readings" options={{ headerShown: false }} />
       <Stack.Screen name="more" options={{ title: "More" }} />
     </Stack>
   );

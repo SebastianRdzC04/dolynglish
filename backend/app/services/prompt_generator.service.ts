@@ -43,24 +43,30 @@ export default class PromptGeneratorService {
       label: 'Beginner',
       cefrLevels: ['A1', 'A2'],
       description: 'A1-A2 level (Beginner to Elementary)',
-      vocabularyGuidelines: 'Use only basic, everyday vocabulary (around 500-1000 most common words). Avoid idioms, phrasal verbs, and technical terms.',
-      grammarGuidelines: 'Use simple present, simple past, and simple future. Short sentences (8-12 words). Avoid complex structures like conditionals, passive voice, or relative clauses.',
+      vocabularyGuidelines:
+        'Use only basic, everyday vocabulary (around 500-1000 most common words). Avoid idioms, phrasal verbs, and technical terms.',
+      grammarGuidelines:
+        'Use simple present, simple past, and simple future. Short sentences (8-12 words). Avoid complex structures like conditionals, passive voice, or relative clauses.',
     },
     medium: {
       id: 'medium',
       label: 'Intermediate',
       cefrLevels: ['B1', 'B2'],
       description: 'B1-B2 level (Intermediate to Upper-Intermediate)',
-      vocabularyGuidelines: 'Use intermediate vocabulary with some less common words. Include common idioms and phrasal verbs. Topic-specific vocabulary is acceptable with context.',
-      grammarGuidelines: 'Use a variety of tenses including perfect tenses and conditionals. Medium-length sentences (12-20 words). Can include passive voice and relative clauses.',
+      vocabularyGuidelines:
+        'Use intermediate vocabulary with some less common words. Include common idioms and phrasal verbs. Topic-specific vocabulary is acceptable with context.',
+      grammarGuidelines:
+        'Use a variety of tenses including perfect tenses and conditionals. Medium-length sentences (12-20 words). Can include passive voice and relative clauses.',
     },
     hard: {
       id: 'hard',
       label: 'Advanced',
       cefrLevels: ['C1', 'C2'],
       description: 'C1-C2 level (Advanced to Proficiency)',
-      vocabularyGuidelines: 'Use sophisticated vocabulary including academic and specialized terms. Include idiomatic expressions, collocations, and nuanced word choices.',
-      grammarGuidelines: 'Use complex grammatical structures freely: mixed conditionals, subjunctive, cleft sentences, inversion. Longer, compound-complex sentences are encouraged.',
+      vocabularyGuidelines:
+        'Use sophisticated vocabulary including academic and specialized terms. Include idiomatic expressions, collocations, and nuanced word choices.',
+      grammarGuidelines:
+        'Use complex grammatical structures freely: mixed conditionals, subjunctive, cleft sentences, inversion. Longer, compound-complex sentences are encouraged.',
     },
   }
 
@@ -70,14 +76,38 @@ export default class PromptGeneratorService {
       name: 'Technology',
       supportsTimePeriod: true,
       subcategories: [
-        { id: 'smartphones', name: 'Smartphones and Mobile Technology', keywords: ['mobile', 'apps', 'connectivity'] },
-        { id: 'ai', name: 'Artificial Intelligence', keywords: ['machine learning', 'automation', 'algorithms'] },
-        { id: 'cybersecurity', name: 'Cybersecurity', keywords: ['privacy', 'hacking', 'protection'] },
-        { id: 'social_media', name: 'Social Media', keywords: ['platforms', 'communication', 'networks'] },
+        {
+          id: 'smartphones',
+          name: 'Smartphones and Mobile Technology',
+          keywords: ['mobile', 'apps', 'connectivity'],
+        },
+        {
+          id: 'ai',
+          name: 'Artificial Intelligence',
+          keywords: ['machine learning', 'automation', 'algorithms'],
+        },
+        {
+          id: 'cybersecurity',
+          name: 'Cybersecurity',
+          keywords: ['privacy', 'hacking', 'protection'],
+        },
+        {
+          id: 'social_media',
+          name: 'Social Media',
+          keywords: ['platforms', 'communication', 'networks'],
+        },
         { id: 'robotics', name: 'Robotics', keywords: ['automation', 'machines', 'manufacturing'] },
         { id: 'cloud', name: 'Cloud Computing', keywords: ['servers', 'storage', 'services'] },
-        { id: 'iot', name: 'Internet of Things', keywords: ['sensors', 'smart devices', 'connectivity'] },
-        { id: 'vr_ar', name: 'Virtual and Augmented Reality', keywords: ['immersive', 'simulation', '3D'] },
+        {
+          id: 'iot',
+          name: 'Internet of Things',
+          keywords: ['sensors', 'smart devices', 'connectivity'],
+        },
+        {
+          id: 'vr_ar',
+          name: 'Virtual and Augmented Reality',
+          keywords: ['immersive', 'simulation', '3D'],
+        },
       ],
     },
     {
@@ -85,13 +115,33 @@ export default class PromptGeneratorService {
       name: 'History',
       supportsTimePeriod: true,
       subcategories: [
-        { id: 'ancient', name: 'Ancient Civilizations', keywords: ['empires', 'cultures', 'archaeology'] },
+        {
+          id: 'ancient',
+          name: 'Ancient Civilizations',
+          keywords: ['empires', 'cultures', 'archaeology'],
+        },
         { id: 'medieval', name: 'Medieval Period', keywords: ['kingdoms', 'feudalism', 'castles'] },
         { id: 'wars', name: 'Wars and Conflicts', keywords: ['battles', 'military', 'treaties'] },
-        { id: 'industrial', name: 'Industrial Revolution', keywords: ['factories', 'inventions', 'urbanization'] },
-        { id: 'cultural', name: 'Cultural Movements', keywords: ['art', 'philosophy', 'social change'] },
-        { id: 'inventions', name: 'Famous Inventions', keywords: ['innovation', 'discovery', 'progress'] },
-        { id: 'exploration', name: 'Exploration and Discovery', keywords: ['voyages', 'navigation', 'colonization'] },
+        {
+          id: 'industrial',
+          name: 'Industrial Revolution',
+          keywords: ['factories', 'inventions', 'urbanization'],
+        },
+        {
+          id: 'cultural',
+          name: 'Cultural Movements',
+          keywords: ['art', 'philosophy', 'social change'],
+        },
+        {
+          id: 'inventions',
+          name: 'Famous Inventions',
+          keywords: ['innovation', 'discovery', 'progress'],
+        },
+        {
+          id: 'exploration',
+          name: 'Exploration and Discovery',
+          keywords: ['voyages', 'navigation', 'colonization'],
+        },
       ],
     },
     {
@@ -99,12 +149,28 @@ export default class PromptGeneratorService {
       name: 'Education',
       supportsTimePeriod: false,
       subcategories: [
-        { id: 'learning', name: 'Learning Methods', keywords: ['techniques', 'strategies', 'retention'] },
+        {
+          id: 'learning',
+          name: 'Learning Methods',
+          keywords: ['techniques', 'strategies', 'retention'],
+        },
         { id: 'online', name: 'Online Education', keywords: ['e-learning', 'platforms', 'remote'] },
         { id: 'study', name: 'Study Techniques', keywords: ['memory', 'focus', 'habits'] },
-        { id: 'psychology', name: 'Educational Psychology', keywords: ['motivation', 'development', 'cognition'] },
-        { id: 'languages', name: 'Language Learning', keywords: ['acquisition', 'bilingualism', 'immersion'] },
-        { id: 'skills', name: 'Skills Development', keywords: ['practice', 'mastery', 'competence'] },
+        {
+          id: 'psychology',
+          name: 'Educational Psychology',
+          keywords: ['motivation', 'development', 'cognition'],
+        },
+        {
+          id: 'languages',
+          name: 'Language Learning',
+          keywords: ['acquisition', 'bilingualism', 'immersion'],
+        },
+        {
+          id: 'skills',
+          name: 'Skills Development',
+          keywords: ['practice', 'mastery', 'competence'],
+        },
       ],
     },
     {
@@ -115,11 +181,23 @@ export default class PromptGeneratorService {
       subcategories: [
         { id: 'web', name: 'Web Development', keywords: ['websites', 'frontend', 'backend'] },
         { id: 'databases', name: 'Databases', keywords: ['SQL', 'storage', 'queries'] },
-        { id: 'algorithms', name: 'Algorithms', keywords: ['sorting', 'searching', 'optimization'] },
-        { id: 'software', name: 'Software Engineering', keywords: ['design', 'architecture', 'testing'] },
+        {
+          id: 'algorithms',
+          name: 'Algorithms',
+          keywords: ['sorting', 'searching', 'optimization'],
+        },
+        {
+          id: 'software',
+          name: 'Software Engineering',
+          keywords: ['design', 'architecture', 'testing'],
+        },
         { id: 'mobile', name: 'Mobile Development', keywords: ['apps', 'iOS', 'Android'] },
         { id: 'devops', name: 'DevOps', keywords: ['deployment', 'automation', 'infrastructure'] },
-        { id: 'security', name: 'Software Security', keywords: ['vulnerabilities', 'encryption', 'authentication'] },
+        {
+          id: 'security',
+          name: 'Software Security',
+          keywords: ['vulnerabilities', 'encryption', 'authentication'],
+        },
       ],
     },
     {
@@ -130,7 +208,11 @@ export default class PromptGeneratorService {
         { id: 'music', name: 'Music', keywords: ['genres', 'instruments', 'composers'] },
         { id: 'art', name: 'Visual Arts', keywords: ['painting', 'sculpture', 'movements'] },
         { id: 'literature', name: 'Literature', keywords: ['novels', 'poetry', 'authors'] },
-        { id: 'traditions', name: 'Traditions and Customs', keywords: ['festivals', 'rituals', 'heritage'] },
+        {
+          id: 'traditions',
+          name: 'Traditions and Customs',
+          keywords: ['festivals', 'rituals', 'heritage'],
+        },
         { id: 'cinema', name: 'Cinema', keywords: ['films', 'directors', 'genres'] },
         { id: 'gastronomy', name: 'Gastronomy', keywords: ['cuisine', 'recipes', 'ingredients'] },
         { id: 'architecture', name: 'Architecture', keywords: ['buildings', 'styles', 'design'] },
@@ -141,18 +223,69 @@ export default class PromptGeneratorService {
       name: 'Pop Culture',
       supportsTimePeriod: true,
       subcategories: [
-        { id: 'anime_manga', name: 'Anime and Manga', keywords: ['shonen', 'studio ghibli', 'naruto', 'one piece', 'attack on titan', 'dragon ball'] },
-        { id: 'disney', name: 'Disney', keywords: ['animated films', 'pixar', 'princesses', 'theme parks', 'classics'] },
-        { id: 'marvel', name: 'Marvel Universe', keywords: ['superheroes', 'avengers', 'comics', 'MCU', 'spider-man'] },
-        { id: 'dc', name: 'DC Universe', keywords: ['batman', 'superman', 'justice league', 'comics', 'dceu'] },
-        { id: 'pixar', name: 'Pixar Animation', keywords: ['toy story', 'finding nemo', 'inside out', 'animation technology'] },
-        { id: 'dreamworks', name: 'DreamWorks Animation', keywords: ['shrek', 'how to train your dragon', 'kung fu panda', 'madagascar'] },
-        { id: 'gaming', name: 'Video Games', keywords: ['nintendo', 'playstation', 'esports', 'minecraft', 'fortnite'] },
-        { id: 'youtubers', name: 'YouTubers and Content Creators', keywords: ['vegetta777', 'elrubius', 'quackity', 'auronplay'] },
+        {
+          id: 'anime_manga',
+          name: 'Anime and Manga',
+          keywords: [
+            'shonen',
+            'studio ghibli',
+            'naruto',
+            'one piece',
+            'attack on titan',
+            'dragon ball',
+          ],
+        },
+        {
+          id: 'disney',
+          name: 'Disney',
+          keywords: ['animated films', 'pixar', 'princesses', 'theme parks', 'classics'],
+        },
+        {
+          id: 'marvel',
+          name: 'Marvel Universe',
+          keywords: ['superheroes', 'avengers', 'comics', 'MCU', 'spider-man'],
+        },
+        {
+          id: 'dc',
+          name: 'DC Universe',
+          keywords: ['batman', 'superman', 'justice league', 'comics', 'dceu'],
+        },
+        {
+          id: 'pixar',
+          name: 'Pixar Animation',
+          keywords: ['toy story', 'finding nemo', 'inside out', 'animation technology'],
+        },
+        {
+          id: 'dreamworks',
+          name: 'DreamWorks Animation',
+          keywords: ['shrek', 'how to train your dragon', 'kung fu panda', 'madagascar'],
+        },
+        {
+          id: 'gaming',
+          name: 'Video Games',
+          keywords: ['nintendo', 'playstation', 'esports', 'minecraft', 'fortnite'],
+        },
+        {
+          id: 'youtubers',
+          name: 'YouTubers and Content Creators',
+          keywords: ['vegetta777', 'elrubius', 'quackity', 'auronplay'],
+        },
         { id: 'kpop', name: 'K-Pop and Asian Pop Culture', keywords: ['korean dramas', 'kdrama'] },
-        { id: 'fun_facts', name: 'Fun Facts and Trivia', keywords: ['curiosities', 'surprising facts', 'behind the scenes', 'easter eggs'] },
-        { id: 'memes', name: 'Internet Culture and Memes', keywords: ['viral trends', 'social media', 'internet phenomena'] },
-        { id: 'scifi_fantasy', name: 'Sci-Fi and Fantasy Franchises', keywords: ['star wars', 'harry potter', 'lord of the rings', 'game of thrones'] },
+        {
+          id: 'fun_facts',
+          name: 'Fun Facts and Trivia',
+          keywords: ['curiosities', 'surprising facts', 'behind the scenes', 'easter eggs'],
+        },
+        {
+          id: 'memes',
+          name: 'Internet Culture and Memes',
+          keywords: ['viral trends', 'social media', 'internet phenomena'],
+        },
+        {
+          id: 'scifi_fantasy',
+          name: 'Sci-Fi and Fantasy Franchises',
+          keywords: ['star wars', 'harry potter', 'lord of the rings', 'game of thrones'],
+        },
       ],
     },
   ]
@@ -216,13 +349,27 @@ export default class PromptGeneratorService {
       id: '1980s',
       name: 'the 1980s',
       yearRange: [1980, 1989],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming', 'pop_culture'],
+      applicableCategories: [
+        'history',
+        'technology',
+        'science',
+        'culture',
+        'programming',
+        'pop_culture',
+      ],
     },
     {
       id: '1990s',
       name: 'the 1990s',
       yearRange: [1990, 1999],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming', 'pop_culture'],
+      applicableCategories: [
+        'history',
+        'technology',
+        'science',
+        'culture',
+        'programming',
+        'pop_culture',
+      ],
     },
     {
       id: '2000s',
@@ -240,7 +387,15 @@ export default class PromptGeneratorService {
       id: 'present',
       name: 'present day',
       yearRange: [2015, 2026],
-      applicableCategories: ['technology', 'science', 'health', 'education', 'programming', 'culture', 'pop_culture'],
+      applicableCategories: [
+        'technology',
+        'science',
+        'health',
+        'education',
+        'programming',
+        'culture',
+        'pop_culture',
+      ],
     },
   ]
 
@@ -290,7 +445,7 @@ export default class PromptGeneratorService {
       'its practical applications',
       'ongoing mysteries and questions',
       'how it connects to other fields',
-      'surprising facts most people don\'t know',
+      "surprising facts most people don't know",
       'the experimental methods used',
       'future possibilities and research',
     ],
@@ -374,7 +529,12 @@ export default class PromptGeneratorService {
         try {
           const prompt = this.generatePromptFromSeed(options.seed)
           await this.logService.logSeedParsed(options.seed, userId)
-          await this.logService.logPromptGenerated(prompt.params, prompt, userId, Date.now() - startTime)
+          await this.logService.logPromptGenerated(
+            prompt.params,
+            prompt,
+            userId,
+            Date.now() - startTime
+          )
           return prompt
         } catch (error) {
           await this.logService.logSeedParseFailed(options.seed, error as Error, userId)
@@ -681,10 +841,7 @@ STRICT RULES:
 
     // Primera subcategoría (abreviada, sin espacios)
     if (params.subcategories.length > 0) {
-      const subAbbr = params.subcategories[0]
-        .toLowerCase()
-        .replace(/\s+/g, '')
-        .slice(0, 6)
+      const subAbbr = params.subcategories[0].toLowerCase().replace(/\s+/g, '').slice(0, 6)
       parts.push(subAbbr)
     }
 
@@ -729,9 +886,7 @@ STRICT RULES:
     const difficultyAbbr = parts[4]
 
     // Encontrar categoría
-    const category = PromptGeneratorService.CATEGORIES.find((c) =>
-      c.id.startsWith(categoryAbbr)
-    )
+    const category = PromptGeneratorService.CATEGORIES.find((c) => c.id.startsWith(categoryAbbr))
     if (!category) {
       throw new Error('Invalid category in seed')
     }

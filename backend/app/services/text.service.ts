@@ -22,10 +22,8 @@ export default class TextService {
   /**
    * Guarda un texto generado por IA con todos sus metadatos
    */
-  async saveGeneratedText(
-    userId: number,
-    generatedData: GeneratedTextResponse
-  ): Promise<Texto> {
+
+  async saveGeneratedText(userId: number, generatedData: GeneratedTextResponse): Promise<Texto> {
     const wordCount = this.countWords(generatedData.content)
 
     const createDto: CreateTextDto = {
@@ -98,10 +96,7 @@ export default class TextService {
   /**
    * Guarda el resultado de evaluación de comprensión
    */
-  async saveEvaluationResult(
-    textId: number,
-    evaluation: EvaluationResult
-  ): Promise<Texto | null> {
+  async saveEvaluationResult(textId: number, evaluation: EvaluationResult): Promise<Texto | null> {
     return this.repository.updateEvaluationResult(textId, evaluation)
   }
 

@@ -3,15 +3,15 @@
  * Wrapper base para todas las pantallas
  */
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import {
   View,
   ScrollView,
   RefreshControl,
   StyleSheet,
   ViewStyle,
-} from 'react-native';
-import { Colors } from '@/constants/Colors';
+} from "react-native";
+import { Colors } from "@/constants/Colors";
 
 interface ScreenProps {
   /** Contenido de la pantalla */
@@ -52,7 +52,11 @@ export function Screen({
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, containerStyle, contentStyle]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          containerStyle,
+          contentStyle,
+        ]}
         refreshControl={
           onRefresh ? (
             <RefreshControl
