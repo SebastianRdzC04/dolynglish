@@ -83,12 +83,33 @@ class ApiClient {
         throw error;
       }
 
-      // Envolver otros errores
-      if (error instanceof Error) {
-        throw new ApiError(error.message, 0);
+      // Manejar errores de red/conexión de forma más descriptiva
+      if (error instanceof TypeError) {
+        // TypeError con 'fetch' indica problemas de red
+        if (error.message.includes('Network request failed') || 
+            error.message.includes('Failed to fetch')) {
+          throw new ApiError(
+            'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.',
+            0,
+            { code: 'NETWORK_ERROR' }
+          );
+        }
       }
 
-      throw new ApiError('Error de conexión', 0);
+      // Envolver otros errores
+      if (error instanceof Error) {
+        // Detectar errores de timeout
+        if (error.name === 'AbortError') {
+          throw new ApiError(
+            'La solicitud tardó demasiado. Intenta de nuevo.',
+            0,
+            { code: 'TIMEOUT' }
+          );
+        }
+        throw new ApiError(error.message, 0, { code: 'UNKNOWN_ERROR' });
+      }
+
+      throw new ApiError('Error de conexión', 0, { code: 'CONNECTION_ERROR' });
     }
   }
 

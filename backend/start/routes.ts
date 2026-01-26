@@ -71,6 +71,9 @@ router
     // Obtener una lectura específica
     router.get('/:id', [IasController, 'getReading'])
 
+    // Eliminar una lectura pendiente (soft delete)
+    router.delete('/:id', [IasController, 'deleteReading'])
+
     // Enviar respuesta de comprensión para evaluación
     router.post('/:id/evaluate', [IasController, 'responseText'])
   })

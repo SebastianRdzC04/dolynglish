@@ -397,6 +397,45 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
   }
 
   /**
+   * Elimina una lectura pendiente (soft delete)
+   * DELETE /readings/:id
+   * Solo permite eliminar lecturas que están pendientes
+   */
+  async deleteReading({ response, auth, params }: HttpContext) {
+    const user = auth.user!
+    const textId = Number(params.id)
+
+    if (isNaN(textId)) {
+      return response.badRequest({
+        message: 'Invalid reading ID',
+        data: null,
+      } as ApiResponse)
+    }
+
+    try {
+      const deleted = await this.textService.deleteReading(user.id, textId)
+
+      if (!deleted) {
+        return response.notFound({
+          message: 'Reading not found or cannot be deleted. Only pending readings can be deleted.',
+          data: null,
+        } as ApiResponse)
+      }
+
+      return response.ok({
+        message: 'Reading deleted successfully',
+        data: null,
+      } as ApiResponse)
+    } catch (error) {
+      console.error('Error deleting reading:', error)
+      return response.internalServerError({
+        message: 'Failed to delete reading',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
    * Parsea la respuesta de generación de texto de la IA
    */
   private parseGeneratedTextResponse(rawResponse: string): GeneratedTextResponse {

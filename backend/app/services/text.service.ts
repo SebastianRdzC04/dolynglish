@@ -121,4 +121,19 @@ export default class TextService {
   getMaxPendingTexts(): number {
     return MAX_PENDING_TEXTS
   }
+
+  /**
+   * Elimina una lectura pendiente (soft delete)
+   * Solo permite eliminar lecturas que están pendientes y pertenecen al usuario
+   */
+  async deleteReading(userId: number, textId: number): Promise<boolean> {
+    const text = await this.repository.getById(textId)
+
+    // Verificar que existe, pertenece al usuario y está pendiente
+    if (!text || text.userId !== userId || text.status !== 'pending') {
+      return false
+    }
+
+    return this.repository.softDelete(textId)
+  }
 }

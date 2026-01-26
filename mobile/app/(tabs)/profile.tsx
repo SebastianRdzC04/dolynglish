@@ -12,6 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 // Features
 import { useSession } from "@/src/features/auth";
 import { ReadingList, useReadings } from "@/src/features/readings";
+import { useStreak } from "@/src/features/streak";
 
 // Shared
 import { Screen, SectionHeader } from "@/src/shared/components/layout";
@@ -21,7 +22,12 @@ export default function ProfileScreen() {
   const { user, signOut } = useSession();
   const router = useRouter();
   const { completedReadings, isLoadingCompleted, refetchCompleted } = useReadings();
+  const { streak, isLoading: isLoadingStreak, refetch: refetchStreak } = useStreak();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Limitar a 4 lecturas recientes
+  const recentReadings = completedReadings.slice(0, 4);
+  const hasMoreReadings = completedReadings.length > 4;
 
   // Cargar historial al montar
   useEffect(() => {
@@ -30,12 +36,16 @@ export default function ProfileScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetchCompleted();
+    await Promise.all([refetchCompleted(), refetchStreak()]);
     setRefreshing(false);
-  }, [refetchCompleted]);
+  }, [refetchCompleted, refetchStreak]);
 
   const handleReadingPress = (readingId: number) => {
     router.push(`/reading/${readingId}`);
+  };
+
+  const handleViewAllReadings = () => {
+    router.push("/readings/history");
   };
 
   return (
@@ -59,7 +69,7 @@ export default function ProfileScreen() {
         {/* Streak Card */}
         <Card style={styles.statCard}>
           <Ionicons name="flame" size={28} color={Colors.accent.strong} />
-          <Text style={styles.statValue}>{user?.currentStreak || 0}</Text>
+          <Text style={styles.statValue}>{streak?.currentStreak ?? 0}</Text>
           <Text style={styles.statLabel}>Racha actual</Text>
         </Card>
 
@@ -86,10 +96,27 @@ export default function ProfileScreen() {
 
       {/* Historial de lecturas completadas */}
       <View style={styles.historySection}>
-        <SectionHeader title="Historial de Lecturas" />
+        <SectionHeader
+          title="Historial de Lecturas"
+          rightContent={
+            hasMoreReadings ? (
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={handleViewAllReadings}
+              >
+                <Text style={styles.viewAllText}>Ver todo</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={Colors.accent.primary}
+                />
+              </Pressable>
+            ) : null
+          }
+        />
 
         <ReadingList
-          readings={completedReadings}
+          readings={recentReadings}
           isLoading={isLoadingCompleted && !refreshing}
           emptyTitle="Aún no has completado ninguna lectura"
           emptySubtitle="Completa lecturas para ver tu historial aquí"
@@ -172,6 +199,16 @@ const styles = StyleSheet.create({
   },
   historySection: {
     gap: 16,
+  },
+  viewAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: Colors.accent.primary,
+    fontWeight: "500",
   },
   logoutButton: {
     flexDirection: "row",

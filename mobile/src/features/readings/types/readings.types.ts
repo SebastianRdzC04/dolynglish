@@ -85,6 +85,7 @@ export interface EvaluateRequest {
  */
 export interface GenerateReadingOptions {
   category?: TextCategory;
+  difficulty?: DifficultyLevel;
   size?: 'short' | 'medium' | 'long';
   timePeriod?: string;
   seed?: string;

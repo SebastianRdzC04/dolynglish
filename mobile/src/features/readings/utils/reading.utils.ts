@@ -94,3 +94,41 @@ export function formatEstimatedTime(wordCount: number): string {
   const time = getEstimatedTime(wordCount);
   return `${time} min`;
 }
+
+/**
+ * Tipo para tamaño de texto
+ */
+export type TextSize = 'short' | 'medium' | 'long';
+
+/**
+ * Mapeo de tamaños a español con descripción
+ */
+export const sizeLabels: Record<TextSize, string> = {
+  short: 'Corto',
+  medium: 'Medio',
+  long: 'Largo',
+};
+
+/**
+ * Configuración de tamaños con tiempo estimado
+ */
+export const sizeConfig: Record<
+  TextSize,
+  { label: string; description: string; time: string }
+> = {
+  short: {
+    label: 'Corto',
+    description: '80-120 palabras',
+    time: '~1 min',
+  },
+  medium: {
+    label: 'Medio',
+    description: '150-220 palabras',
+    time: '~2 min',
+  },
+  long: {
+    label: 'Largo',
+    description: '250-350 palabras',
+    time: '~3 min',
+  },
+};

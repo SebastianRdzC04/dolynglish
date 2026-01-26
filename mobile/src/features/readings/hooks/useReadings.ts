@@ -33,6 +33,8 @@ interface UseReadingsReturn {
   refetchCompleted: () => Promise<void>;
   /** Generar nueva lectura */
   generateReading: (options?: GenerateReadingOptions) => Promise<GenerateReadingResponse | null>;
+  /** Eliminar una lectura pendiente */
+  deleteReading: (id: number) => Promise<boolean>;
 }
 
 /**
@@ -109,6 +111,23 @@ export function useReadings(): UseReadingsReturn {
     [pendingInfo.canGenerateMore, pendingInfo.maxPending, fetchPending]
   );
 
+  const deleteReading = useCallback(
+    async (id: number): Promise<boolean> => {
+      try {
+        setError(null);
+        await readingsService.delete(id);
+        // Refrescar lista después de eliminar
+        await fetchPending();
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al eliminar lectura');
+        console.error('Error deleting reading:', err);
+        return false;
+      }
+    },
+    [fetchPending]
+  );
+
   // Cargar lecturas pendientes al montar
   useEffect(() => {
     fetchPending();
@@ -125,5 +144,6 @@ export function useReadings(): UseReadingsReturn {
     refetchPending: fetchPending,
     refetchCompleted: fetchCompleted,
     generateReading,
+    deleteReading,
   };
 }

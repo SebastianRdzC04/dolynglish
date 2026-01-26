@@ -53,6 +53,7 @@ class ReadingsService {
     // Construir query string con opciones
     const params = new URLSearchParams();
     if (options?.category) params.append('category', options.category);
+    if (options?.difficulty) params.append('difficulty', options.difficulty);
     if (options?.size) params.append('size', options.size);
     if (options?.timePeriod) params.append('timePeriod', options.timePeriod);
     if (options?.seed) params.append('seed', options.seed);
@@ -73,6 +74,13 @@ class ReadingsService {
       request
     );
     return response.data;
+  }
+
+  /**
+   * Elimina una lectura pendiente (soft delete)
+   */
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/readings/${id}`);
   }
 }
 

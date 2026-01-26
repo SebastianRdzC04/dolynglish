@@ -1,6 +1,7 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import * as SystemUI from "expo-system-ui";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors } from "@/constants/Colors";
 import { SessionProvider, useSession } from "@/src/features/auth";
 import { Loading } from "@/src/shared/components/ui";
@@ -56,8 +57,10 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <SessionProvider>
-      <RootLayoutNav />
-    </SessionProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SessionProvider>
+        <RootLayoutNav />
+      </SessionProvider>
+    </GestureHandlerRootView>
   );
 }
