@@ -295,87 +295,73 @@ export default class PromptGeneratorService {
       id: 'ancient',
       name: 'ancient times',
       yearRange: [-3000, 500],
-      applicableCategories: ['history', 'culture', 'science'],
+      applicableCategories: ['history', 'culture'],
     },
     {
       id: 'medieval',
       name: 'the medieval period',
       yearRange: [500, 1500],
-      applicableCategories: ['history', 'culture', 'science'],
+      applicableCategories: ['history', 'culture'],
     },
     {
       id: 'renaissance',
       name: 'the Renaissance',
       yearRange: [1400, 1600],
-      applicableCategories: ['history', 'culture', 'science'],
+      applicableCategories: ['history', 'culture'],
     },
     {
       id: 'early_modern',
       name: 'the early modern era',
       yearRange: [1500, 1800],
-      applicableCategories: ['history', 'culture', 'science'],
+      applicableCategories: ['history', 'culture'],
     },
     {
       id: 'industrial',
       name: 'the Industrial Revolution',
       yearRange: [1760, 1840],
-      applicableCategories: ['history', 'technology', 'science', 'culture'],
+      applicableCategories: ['history', 'technology', 'culture'],
     },
     {
       id: 'late_1800s',
       name: 'the late 19th century',
       yearRange: [1850, 1900],
-      applicableCategories: ['history', 'technology', 'science', 'culture'],
+      applicableCategories: ['history', 'technology', 'culture'],
     },
     {
       id: 'early_1900s',
       name: 'the early 20th century',
       yearRange: [1900, 1950],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['history', 'technology', 'culture', 'programming'],
     },
     {
       id: '1950s_60s',
       name: 'the 1950s and 1960s',
       yearRange: [1950, 1969],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['history', 'technology', 'culture', 'programming'],
     },
     {
       id: '1970s',
       name: 'the 1970s',
       yearRange: [1970, 1979],
-      applicableCategories: ['history', 'technology', 'science', 'culture', 'programming'],
+      applicableCategories: ['history', 'technology', 'culture', 'programming'],
     },
     {
       id: '1980s',
       name: 'the 1980s',
       yearRange: [1980, 1989],
-      applicableCategories: [
-        'history',
-        'technology',
-        'science',
-        'culture',
-        'programming',
-        'pop_culture',
-      ],
+      applicableCategories: ['history', 'technology', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: '1990s',
       name: 'the 1990s',
       yearRange: [1990, 1999],
-      applicableCategories: [
-        'history',
-        'technology',
-        'science',
-        'culture',
-        'programming',
-        'pop_culture',
-      ],
+      applicableCategories: ['history', 'technology', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: '2000s',
       name: 'the 2000s',
       yearRange: [2000, 2010],
-      applicableCategories: ['technology', 'science', 'culture', 'programming', 'pop_culture'],
+      applicableCategories: ['technology', 'culture', 'programming', 'pop_culture'],
     },
     {
       id: 'modern_computing',
@@ -387,15 +373,7 @@ export default class PromptGeneratorService {
       id: 'present',
       name: 'present day',
       yearRange: [2015, 2026],
-      applicableCategories: [
-        'technology',
-        'science',
-        'health',
-        'education',
-        'programming',
-        'culture',
-        'pop_culture',
-      ],
+      applicableCategories: ['technology', 'education', 'programming', 'culture', 'pop_culture'],
     },
   ]
 
@@ -439,16 +417,7 @@ export default class PromptGeneratorService {
       'its role in solving global problems',
       'the pioneers who made it possible',
     ],
-    science: [
-      'the key discovery that changed everything',
-      'how scientists made this breakthrough',
-      'its practical applications',
-      'ongoing mysteries and questions',
-      'how it connects to other fields',
-      "surprising facts most people don't know",
-      'the experimental methods used',
-      'future possibilities and research',
-    ],
+    // removed 'science' focus elements (category deprecated)
     history: [
       'the key figures involved',
       'the lasting impact on society',
@@ -479,16 +448,7 @@ export default class PromptGeneratorService {
       'advanced techniques for experts',
       'industry standards and conventions',
     ],
-    health: [
-      'evidence-based recommendations',
-      'common myths debunked',
-      'how lifestyle affects outcomes',
-      'preventive measures',
-      'the science behind it',
-      'practical daily habits',
-      'long-term vs short-term effects',
-      'individual variations and factors',
-    ],
+    // removed 'health' focus elements (category deprecated)
     culture: [
       'historical origins and evolution',
       'regional variations',
@@ -617,6 +577,11 @@ export default class PromptGeneratorService {
 
   private generateRandomParams(options?: GenerateTextOptions): RandomPromptParams {
     // Seleccionar categoría
+    const ALLOWED_CATEGORY_IDS = PromptGeneratorService.CATEGORIES.map((c) => c.id)
+    if (options?.category && !ALLOWED_CATEGORY_IDS.includes(options.category as any)) {
+      throw new Error('Invalid category option')
+    }
+
     const primaryCategory = options?.category ?? this.selectRandomCategory()
     const categoryConfig = this.getCategoryConfig(primaryCategory)
 

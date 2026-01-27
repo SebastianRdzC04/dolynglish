@@ -58,6 +58,14 @@ export default class IasController {
     // Validar parámetros opcionales del query string
     const options = await generateTextValidator.validate(request.qs())
 
+    const ALLOWED_CATEGORIES = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
+    if (options.category && !ALLOWED_CATEGORIES.includes(options.category)) {
+      return response.badRequest({
+        message: 'Invalid category',
+        data: null,
+      } as ApiResponse)
+    }
+
     // Validar límite de textos pendientes
     const canGenerate = await this.textService.canUserGenerateMore(user.id)
     if (!canGenerate) {
@@ -97,7 +105,24 @@ export default class IasController {
       // Parsear JSON de la respuesta
       const generatedData = this.parseGeneratedTextResponse(fullResponse)
 
-      // Guardar en base de datos
+      // Garantizar que la categoría guardada sea la categoría solicitada en el prompt
+      const requestedCategory = generatedPrompt.params.primaryCategory
+      const aiReturnedCategory = generatedData.category
+
+      if (generatedData.category !== requestedCategory) {
+        // Log del mismatch para diagnóstico
+        console.warn('Category mismatch between prompt and AI response', {
+          userId: user.id,
+          requestedCategory,
+          aiReturnedCategory,
+          seed: generatedPrompt.seed,
+        })
+
+        // Override: usamos la categoría del prompt como fuente de verdad
+        generatedData.category = requestedCategory
+      }
+
+      // Guardar en base de datos con la categoría garantizada
       const saveStartTime = Date.now()
       const savedText = await this.textService.saveGeneratedText(user.id, generatedData)
 
@@ -127,6 +152,7 @@ export default class IasController {
             cefrLevel: generatedPrompt.params.difficulty.cefrLevels.join('-'),
             timePeriod: generatedPrompt.params.timePeriod?.name,
             contentType: generatedPrompt.params.contentType,
+            aiReturnedCategory, // para trazabilidad
           },
         },
       } as ApiResponse)
@@ -136,6 +162,14 @@ export default class IasController {
       // Log del error de guardado si aplica
       if (error instanceof Error && error.message.includes('save')) {
         await this.logService.logTextSaveFailed(error, 'unknown', user.id)
+      }
+
+      // Mejor manejo de errores: si la IA devolvió una categoría inválida, mapear a 502
+      if (error instanceof Error && error.message.includes('Invalid category returned by AI')) {
+        return response.status(502).send({
+          message: 'AI returned invalid category',
+          error: error.message,
+        })
       }
 
       return response.internalServerError({
@@ -454,19 +488,15 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
         throw new Error('Missing required fields in generated text response')
       }
 
-      // Validar y normalizar categoría
-      const validCategories = [
-        'technology',
-        'science',
-        'history',
-        'education',
-        'programming',
-        'health',
-        'culture',
-      ]
-      const category = validCategories.includes(parsed.category.toLowerCase())
-        ? parsed.category.toLowerCase()
-        : 'technology'
+      // Validar categoría: debe ser estrictamente una de las permitidas
+      const ALLOWED_CATEGORIES = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
+      // Normalizar: espacios/guiones -> underscore (ej: "pop culture" -> "pop_culture")
+      let category = String(parsed.category ?? '').toLowerCase().trim()
+      category = category.replace(/[\s-]+/g, '_')
+      
+      if (!ALLOWED_CATEGORIES.includes(category)) {
+        throw new Error(`Invalid category returned by AI: ${parsed.category}`)
+      }
 
       // Validar y normalizar dificultad
       const validDifficulties = ['easy', 'medium', 'hard']

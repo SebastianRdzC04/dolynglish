@@ -19,11 +19,9 @@ export interface ApiErrorResponse {
  */
 export type TextCategory =
   | 'technology'
-  | 'science'
   | 'history'
   | 'education'
   | 'programming'
-  | 'health'
   | 'culture'
   | 'pop_culture'
 
