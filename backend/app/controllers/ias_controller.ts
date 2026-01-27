@@ -13,6 +13,7 @@ import type {
   GeneratedTextResponse,
   PendingReadingsResponse,
   ReadingDto,
+  TextCategory,
 } from '../types/api_response.js'
 import type { GenerationOptionsResponse } from '../types/prompt_generator.js'
 import type { StreakEvaluationData } from '../types/streak.js'
@@ -489,14 +490,16 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
       }
 
       // Validar categoría: debe ser estrictamente una de las permitidas
-      const ALLOWED_CATEGORIES = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
+      const ALLOWED_CATEGORIES: TextCategory[] = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
       // Normalizar: espacios/guiones -> underscore (ej: "pop culture" -> "pop_culture")
-      let category = String(parsed.category ?? '').toLowerCase().trim()
-      category = category.replace(/[\s-]+/g, '_')
+      let categoryNormalized = String(parsed.category ?? '').toLowerCase().trim()
+      categoryNormalized = categoryNormalized.replace(/[\s-]+/g, '_')
       
-      if (!ALLOWED_CATEGORIES.includes(category)) {
+      if (!ALLOWED_CATEGORIES.includes(categoryNormalized as TextCategory)) {
         throw new Error(`Invalid category returned by AI: ${parsed.category}`)
       }
+      
+      const category = categoryNormalized as TextCategory
 
       // Validar y normalizar dificultad
       const validDifficulties = ['easy', 'medium', 'hard']
