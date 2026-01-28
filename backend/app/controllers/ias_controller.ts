@@ -46,7 +46,7 @@ export default class IasController {
    * - Valida que el usuario no tenga más de 3 textos pendientes
    * - Genera título, descripción, contenido y categoría usando IA
    * - Guarda el texto en la base de datos
-   * 
+   *
    * Query params opcionales:
    * - category: categoría específica
    * - size: tamaño del texto (short, medium, long)
@@ -59,7 +59,14 @@ export default class IasController {
     // Validar parámetros opcionales del query string
     const options = await generateTextValidator.validate(request.qs())
 
-    const ALLOWED_CATEGORIES = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
+    const ALLOWED_CATEGORIES = [
+      'technology',
+      'history',
+      'education',
+      'programming',
+      'culture',
+      'pop_culture',
+    ]
     if (options.category && !ALLOWED_CATEGORIES.includes(options.category)) {
       return response.badRequest({
         message: 'Invalid category',
@@ -90,6 +97,7 @@ export default class IasController {
           category: options.category,
           size: options.size,
           timePeriod: options.timePeriod,
+          difficulty: options.difficulty,
           seed: options.seed,
         },
         user.id
@@ -121,6 +129,25 @@ export default class IasController {
 
         // Override: usamos la categoría del prompt como fuente de verdad
         generatedData.category = requestedCategory
+      }
+
+      // Asegurar que la dificultad devuelta por la IA coincide con la solicitada.
+      // Si la IA no respeta la instrucción, forzamos la dificultad solicitada.
+      try {
+        const requestedDifficulty = generatedPrompt.params?.difficulty?.id
+        const aiReturnedDifficulty = generatedData.difficulty
+        if (requestedDifficulty && aiReturnedDifficulty !== requestedDifficulty) {
+          console.warn('Difficulty mismatch between prompt and AI response', {
+            userId: user.id,
+            requestedDifficulty,
+            aiReturnedDifficulty,
+            seed: generatedPrompt.seed,
+          })
+          generatedData.difficulty = requestedDifficulty
+        }
+      } catch (e) {
+        // No bloquear el flujo si hay alguna estructura inesperada
+        console.warn('Could not enforce requested difficulty', e)
       }
 
       // Guardar en base de datos con la categoría garantizada
@@ -440,7 +467,7 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
     const user = auth.user!
     const textId = Number(params.id)
 
-    if (isNaN(textId)) {
+    if (Number.isNaN(textId)) {
       return response.badRequest({
         message: 'Invalid reading ID',
         data: null,
@@ -490,15 +517,24 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
       }
 
       // Validar categoría: debe ser estrictamente una de las permitidas
-      const ALLOWED_CATEGORIES: TextCategory[] = ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']
+      const ALLOWED_CATEGORIES: TextCategory[] = [
+        'technology',
+        'history',
+        'education',
+        'programming',
+        'culture',
+        'pop_culture',
+      ]
       // Normalizar: espacios/guiones -> underscore (ej: "pop culture" -> "pop_culture")
-      let categoryNormalized = String(parsed.category ?? '').toLowerCase().trim()
+      let categoryNormalized = String(parsed.category ?? '')
+        .toLowerCase()
+        .trim()
       categoryNormalized = categoryNormalized.replace(/[\s-]+/g, '_')
-      
+
       if (!ALLOWED_CATEGORIES.includes(categoryNormalized as TextCategory)) {
         throw new Error(`Invalid category returned by AI: ${parsed.category}`)
       }
-      
+
       const category = categoryNormalized as TextCategory
 
       // Validar y normalizar dificultad
