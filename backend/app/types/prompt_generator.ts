@@ -94,13 +94,7 @@ export type ContentPerspective =
 /**
  * Región geográfica para contexto
  */
-export type GeographicRegion =
-  | 'global'
-  | 'europe'
-  | 'asia'
-  | 'americas'
-  | 'africa'
-  | 'oceania'
+export type GeographicRegion = 'global' | 'europe' | 'asia' | 'americas' | 'africa' | 'oceania'
 
 /**
  * Parámetros aleatorios generados para el prompt

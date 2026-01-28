@@ -73,10 +73,7 @@ export default class PromptLogRepository {
    * Obtener logs de un usuario
    */
   async findByUserId(userId: number, limit: number = 50): Promise<PromptLog[]> {
-    return PromptLog.query()
-      .where('user_id', userId)
-      .orderBy('created_at', 'desc')
-      .limit(limit)
+    return PromptLog.query().where('user_id', userId).orderBy('created_at', 'desc').limit(limit)
   }
 
   /**

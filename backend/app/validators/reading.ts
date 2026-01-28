@@ -5,7 +5,7 @@ import vine from '@vinejs/vine'
  */
 export const generateTextValidator = vine.compile(
   vine.object({
-  category: vine
+    category: vine
       .enum(['technology', 'history', 'education', 'programming', 'culture', 'pop_culture'])
       .optional(),
     size: vine.enum(['short', 'medium', 'long']).optional(),

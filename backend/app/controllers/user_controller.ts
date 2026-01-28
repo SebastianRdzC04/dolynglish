@@ -24,7 +24,8 @@ export default class UserController {
   /**
    * Obtiene los datos de racha del usuario autenticado
    * GET /user/streak
-   * 
+   *
+   *
    * Query params opcionales:
    * - days: número de días de historial (default 10, max 30)
    */
@@ -61,7 +62,7 @@ export default class UserController {
   /**
    * Obtiene el perfil completo con datos de racha incluidos
    * GET /user/me
-   * 
+   *
    * Combina perfil y streak en una sola respuesta para optimizar requests del móvil
    */
   async getMe({ response, auth }: HttpContext) {
