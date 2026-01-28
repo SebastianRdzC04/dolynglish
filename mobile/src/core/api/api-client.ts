@@ -56,9 +56,11 @@ class ApiClient {
     // Agregar token de autenticación si es requerido
     if (requiresAuth) {
       const token = await this.getAuthToken();
-      if (token) {
-        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      // Si no hay token y la petición requiere autenticación, fallar rápido
+      if (!token) {
+        throw new ApiError('Sin token de acceso', 401, { code: 'NO_TOKEN' });
       }
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     }
 
     const url = `${this.baseUrl}${endpoint}`;
