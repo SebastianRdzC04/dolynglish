@@ -16,7 +16,7 @@ import Animated, {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors } from '@/constants/Colors';
 import { Reading } from '../types';
-import { categoryLabels, getEstimatedTime } from '../utils';
+import { getCategoryLabel, getEstimatedTime } from '../utils';
 import { ReadingCard } from './ReadingCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -139,7 +139,7 @@ export function SwipeableReadingCard({
             title={reading.title}
             wordCount={reading.wordCount}
             difficulty={reading.difficulty}
-            category={categoryLabels[reading.category] || reading.category}
+            category={getCategoryLabel(reading.category)}
             estimatedTime={getEstimatedTime(reading.wordCount)}
             onPress={onPress}
           />

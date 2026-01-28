@@ -9,7 +9,7 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 
 // Features
-import { ReadingCard, useReadings, categoryLabels, getEstimatedTime } from "@/src/features/readings";
+import { ReadingCard, useReadings, getCategoryLabel, getEstimatedTime } from "@/src/features/readings";
 import type { Reading } from "@/src/features/readings";
 
 // Shared
@@ -41,7 +41,7 @@ export default function ReadingsHistoryScreen() {
         title={item.title}
         wordCount={item.wordCount}
         difficulty={item.difficulty}
-        category={categoryLabels[item.category] || item.category}
+        category={getCategoryLabel(item.category)}
         estimatedTime={getEstimatedTime(item.wordCount)}
         onPress={() => handleReadingPress(item.id)}
       />

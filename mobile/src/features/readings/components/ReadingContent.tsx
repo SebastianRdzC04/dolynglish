@@ -9,7 +9,7 @@ import { Colors } from '@/constants/Colors';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Badge, Divider } from '@/src/shared/components/ui';
 import { Reading } from '../types';
-import { categoryLabels, difficultyLabels, difficultyConfig, getEstimatedTime } from '../utils';
+import { getCategoryLabel, difficultyLabels, difficultyConfig, getEstimatedTime } from '../utils';
 
 interface ReadingContentProps {
   /** Datos de la lectura */
@@ -31,7 +31,7 @@ export function ReadingContent({ reading }: ReadingContentProps) {
               color={Colors.accent.primary}
             />
             <Text style={styles.categoryText}>
-              {categoryLabels[reading.category] || reading.category}
+              {getCategoryLabel(reading.category)}
             </Text>
           </View>
 

@@ -9,11 +9,9 @@ import { StreakEvaluationData } from '../../streak/types';
  */
 export type TextCategory =
   | 'technology'
-  | 'science'
   | 'history'
   | 'education'
   | 'programming'
-  | 'health'
   | 'culture'
   | 'pop_culture';
 

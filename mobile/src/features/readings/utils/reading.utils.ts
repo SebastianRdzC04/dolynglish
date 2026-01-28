@@ -10,11 +10,9 @@ import { TextCategory, DifficultyLevel } from '../types';
  */
 export const categoryLabels: Record<TextCategory, string> = {
   technology: 'Tecnología',
-  science: 'Ciencia',
   history: 'Historia',
   education: 'Educación',
   programming: 'Programación',
-  health: 'Salud',
   culture: 'Cultura',
   pop_culture: 'Cultura Pop',
 };
@@ -61,9 +59,10 @@ export function getEstimatedTime(wordCount: number): number {
 
 /**
  * Obtiene la etiqueta de categoría en español
+ * Para categorías no reconocidas, devuelve un fallback genérico elegante
  */
-export function getCategoryLabel(category: TextCategory): string {
-  return categoryLabels[category] || category;
+export function getCategoryLabel(category: string): string {
+  return categoryLabels[category as TextCategory] || 'Conocimiento General';
 }
 
 /**

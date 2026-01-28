@@ -7,7 +7,7 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Loading, EmptyState } from '@/src/shared/components/ui';
 import { Reading } from '../types';
-import { categoryLabels, getEstimatedTime } from '../utils';
+import { getCategoryLabel, getEstimatedTime } from '../utils';
 import { ReadingCard } from './ReadingCard';
 
 interface ReadingListProps {
@@ -58,7 +58,7 @@ export function ReadingList({
           title={reading.title}
           wordCount={reading.wordCount}
           difficulty={reading.difficulty}
-          category={categoryLabels[reading.category] || reading.category}
+          category={getCategoryLabel(reading.category)}
           estimatedTime={getEstimatedTime(reading.wordCount)}
           onPress={() => onReadingPress(reading.id)}
         />
