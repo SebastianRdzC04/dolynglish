@@ -77,6 +77,23 @@ export default class PromptLogRepository {
   }
 
   /**
+   * Contar explicaciones realizadas por un usuario en las últimas 24 horas
+   */
+  async countUserExplanationsToday(userId: number): Promise<number> {
+    const twentyFourHoursAgo = new Date()
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+
+    const result = await PromptLog.query()
+      .where('user_id', userId)
+      .whereIn('event', ['explanation_completed', 'explanation_requested'])
+      .where('created_at', '>=', twentyFourHoursAgo.toISOString())
+      .count('* as total')
+      .first()
+
+    return Number(result?.$extras.total ?? 0)
+  }
+
+  /**
    * Obtener estadísticas de generación
    */
   async getStats(fromDate?: string, toDate?: string): Promise<PromptLogStats> {

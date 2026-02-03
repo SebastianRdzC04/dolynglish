@@ -94,3 +94,23 @@ export interface PendingReadingsResponse {
   maxPending: number
   canGenerateMore: boolean
 }
+
+/**
+ * Término simplificado en explicación
+ */
+export interface SimplifiedTerm {
+  term: string
+  simple: string
+}
+
+/**
+ * Respuesta de explicación de selección de texto
+ */
+export interface ExplanationResponse {
+  selection: string
+  explanation: string
+  simplifiedTerms: SimplifiedTerm[]
+  exampleInContext: string
+  difficultyLevel: DifficultyLevel
+  confidence: number
+}

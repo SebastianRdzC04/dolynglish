@@ -17,6 +17,10 @@ export type LogEvent =
   | 'evaluation_failed'
   | 'seed_parsed'
   | 'seed_parse_failed'
+  | 'explanation_requested'
+  | 'explanation_completed'
+  | 'explanation_failed'
+  | 'explanation_rate_limited'
 
 /**
  * DTO para crear un log

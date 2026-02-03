@@ -7,3 +7,4 @@ export * from './EvaluationResult';
 export * from './GenerateButton';
 export * from './GenerateReadingModal';
 export * from './SwipeableReadingCard';
+export * from './ExplanationModal';

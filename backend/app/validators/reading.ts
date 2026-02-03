@@ -25,3 +25,21 @@ export type GenerateTextInput = {
   timePeriod?: string
   seed?: string
 }
+
+/**
+ * Validador para explicación de selección de texto
+ */
+export const explainSelectionValidator = vine.compile(
+  vine.object({
+    selection: vine.string().trim().minLength(1).maxLength(200),
+    type: vine.enum(['word', 'phrase', 'sentence']).optional(),
+  })
+)
+
+/**
+ * Tipo inferido del validador de explicación
+ */
+export type ExplainSelectionInput = {
+  selection: string
+  type?: 'word' | 'phrase' | 'sentence'
+}

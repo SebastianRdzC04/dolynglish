@@ -6,7 +6,7 @@ import PromptGeneratorService from '#services/prompt_generator.service'
 import PromptLogService from '#services/prompt_log.service'
 import StreakService from '#services/streak.service'
 import { inject } from '@adonisjs/core'
-import { generateTextValidator } from '#validators/reading'
+import { generateTextValidator, explainSelectionValidator } from '#validators/reading'
 import type {
   ApiResponse,
   EvaluationResult,
@@ -14,6 +14,7 @@ import type {
   PendingReadingsResponse,
   ReadingDto,
   TextCategory,
+  ExplanationResponse,
 } from '../types/api_response.js'
 import type { GenerationOptionsResponse } from '../types/prompt_generator.js'
 import type { StreakEvaluationData } from '../types/streak.js'
@@ -580,6 +581,260 @@ Evaluate how well the user understood the main idea of the text. Respond ONLY wi
     } catch (error) {
       console.error('Error parsing evaluation result:', error, rawResponse)
       throw new Error('Failed to parse AI response for evaluation')
+    }
+  }
+
+  /**
+   * Explica el significado de una selección de texto en contexto
+   * POST /readings/:id/explain
+   *
+   * Genera una explicación en inglés simple adaptada al nivel de dificultad
+   * del texto original, sin traducir al español.
+   *
+   * Rate limiting: 30 explicaciones por usuario cada 24 horas
+   */
+  async explainSelection({ request, response, params, auth }: HttpContext) {
+    const user = auth.user!
+    const textId = Number(params.id)
+    const startTime = Date.now()
+
+    // Validar entrada
+    const { selection } = await explainSelectionValidator.validate(request.body())
+
+    // Obtener texto de la BD
+    const texto = await this.textService.getTextById(textId)
+
+    if (!texto) {
+      return response.notFound({
+        message: 'Reading text not found',
+        data: null,
+      } as ApiResponse)
+    }
+
+    if (texto.userId !== user.id) {
+      return response.forbidden({
+        message: 'You do not have permission to access this text',
+        data: null,
+      } as ApiResponse)
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // RATE LIMITING: 30 explicaciones por día
+    // ═════════════════════════════════════════════════════════════════════════
+    const DAILY_LIMIT = 30
+    const rateLimitCheck = await this.logService.canUserRequestExplanation(user.id, DAILY_LIMIT)
+
+    if (!rateLimitCheck.canRequest) {
+      // Log de rate limit alcanzado
+      await this.logService.logExplanationRateLimited(
+        textId,
+        user.id,
+        rateLimitCheck.usedToday,
+        rateLimitCheck.limit
+      )
+
+      return response.tooManyRequests({
+        message: `You have reached the daily limit of ${DAILY_LIMIT} explanations. Try again in 24 hours.`,
+        data: {
+          usedToday: rateLimitCheck.usedToday,
+          limit: rateLimitCheck.limit,
+          canRequest: false,
+        },
+      } as ApiResponse)
+    }
+
+    // Log de solicitud de explicación
+    await this.logService.logExplanationRequested(textId, user.id, selection)
+
+    // Construir prompt adaptado a la dificultad
+    const systemPrompt = this.buildExplanationSystemPrompt()
+    const userPrompt = this.buildExplanationUserPrompt(texto, selection)
+
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]
+
+    try {
+      // Obtener respuesta de la IA
+      const fullResponse = await iaHttpService.getFullResponse(messages)
+      const explanation = this.parseExplanationResponse(fullResponse)
+
+      const durationMs = Date.now() - startTime
+
+      // Log de explicación completada con métricas
+      await this.logService.logExplanationCompleted(
+        textId,
+        user.id,
+        selection,
+        explanation.difficultyLevel,
+        explanation.confidence,
+        durationMs
+      )
+
+      return response.ok({
+        message: 'Explanation generated successfully',
+        data: explanation,
+      } as ApiResponse<ExplanationResponse>)
+    } catch (error) {
+      // Log de error en explicación
+      await this.logService.logExplanationFailed(
+        error as Error,
+        textId,
+        user.id,
+        selection
+      )
+
+      return response.internalServerError({
+        message: 'Failed to generate explanation',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * Construye el system prompt para explicaciones
+   */
+  private buildExplanationSystemPrompt(): string {
+    return `You are an English learning assistant helping non-native speakers understand English texts.
+
+RULES:
+1. NEVER translate to Spanish or any other language
+2. Explain in SIMPLE ENGLISH appropriate for the text difficulty level
+3. Use context from the full text to explain the selection
+4. Respond ONLY with valid JSON matching this schema:
+
+{
+  "selection": "<the exact selected text>",
+  "explanation": "<simple explanation in English, 1-2 sentences>",
+  "simplifiedTerms": [
+    {
+      "term": "<difficult word or phrase from selection>",
+      "simple": "<simpler English explanation>"
+    }
+  ],
+  "exampleInContext": "<an example sentence showing similar usage>",
+  "difficultyLevel": "<easy|medium|hard>",
+  "confidence": <0.0-1.0>
+}
+
+DIFFICULTY GUIDELINES:
+- easy (A1-A2): Use only basic vocabulary (500-1000 most common words). Explain like to a 10-year-old.
+- medium (B1-B2): Use intermediate vocabulary, can introduce some idioms. Explain like to a high school student.
+- hard (C1-C2): Can use advanced vocabulary but still clarify complex concepts. Explain like to a college student.
+
+EXAMPLES:
+
+For "easy" text about daily life:
+Selection: "She put on her coat"
+{
+  "selection": "She put on her coat",
+  "explanation": "She wore her coat (the clothing you wear outside when it's cold).",
+  "simplifiedTerms": [{"term": "put on", "simple": "wore, dressed in"}],
+  "exampleInContext": "He put on his shoes before going outside.",
+  "difficultyLevel": "easy",
+  "confidence": 0.98
+}
+
+For "medium" text about technology:
+Selection: "The app streamlines the checkout process"
+{
+  "selection": "The app streamlines the checkout process",
+  "explanation": "The app makes buying things faster and easier by removing unnecessary steps.",
+  "simplifiedTerms": [
+    {"term": "streamlines", "simple": "makes something work better by making it simpler"},
+    {"term": "checkout process", "simple": "the steps you take to buy something"}
+  ],
+  "exampleInContext": "The new system streamlines the registration process for students.",
+  "difficultyLevel": "medium",
+  "confidence": 0.93
+}
+
+For "hard" text about philosophy:
+Selection: "The author postulates an inherent dichotomy in human nature"
+{
+  "selection": "The author postulates an inherent dichotomy in human nature",
+  "explanation": "The author suggests that human nature naturally contains two opposite or conflicting parts that exist together.",
+  "simplifiedTerms": [
+    {"term": "postulates", "simple": "suggests or proposes as a basic idea"},
+    {"term": "inherent", "simple": "existing as a natural or permanent part of something"},
+    {"term": "dichotomy", "simple": "a division into two completely opposite things"}
+  ],
+  "exampleInContext": "Many thinkers postulate a dichotomy between reason and emotion.",
+  "difficultyLevel": "hard",
+  "confidence": 0.89
+}
+
+Do NOT use markdown, code blocks, or any text outside the JSON object.`.trim()
+  }
+
+  /**
+   * Construye el user prompt con contexto completo del texto
+   */
+  private buildExplanationUserPrompt(texto: any, selection: string): string {
+    return `
+TEXT INFORMATION:
+Title: "${texto.title}"
+Difficulty: ${texto.difficulty}
+Category: ${texto.category}
+
+FULL TEXT:
+"""
+${texto.content}
+"""
+
+SELECTED TEXT:
+"${selection}"
+
+TASK:
+Explain what the selected text means in simple English appropriate for a ${texto.difficulty} level learner. Use the full text context to provide accurate explanation. Focus on helping them understand WITHOUT translating to their native language.
+
+Remember:
+- For easy: Use very simple words a beginner would know
+- For medium: Use everyday vocabulary but explain any technical terms
+- For hard: Can use advanced words but break down complex ideas
+
+Respond ONLY with the JSON object, nothing else.
+`.trim()
+  }
+
+  /**
+   * Parsea la respuesta de explicación de la IA
+   */
+  private parseExplanationResponse(rawResponse: string): ExplanationResponse {
+    try {
+      const cleanedResponse = rawResponse
+        .trim()
+        .replace(/^```json\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim()
+
+      const parsed = JSON.parse(cleanedResponse)
+
+      // Validar campos requeridos
+      if (!parsed.selection || !parsed.explanation) {
+        throw new Error('Missing required fields in explanation response')
+      }
+
+      // Asegurar que simplifiedTerms es un array válido
+      const simplifiedTerms = Array.isArray(parsed.simplifiedTerms) ? parsed.simplifiedTerms : []
+
+      // Validar estructura de términos
+      const validTerms = simplifiedTerms.filter(
+        (term: any) => term && typeof term.term === 'string' && typeof term.simple === 'string'
+      )
+
+      return {
+        selection: String(parsed.selection),
+        explanation: String(parsed.explanation),
+        simplifiedTerms: validTerms,
+        exampleInContext: String(parsed.exampleInContext || ''),
+        difficultyLevel: parsed.difficultyLevel || 'medium',
+        confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0.8)),
+      }
+    } catch (error) {
+      console.error('Error parsing explanation response:', error, rawResponse)
+      throw new Error('Failed to parse AI response for explanation')
     }
   }
 }

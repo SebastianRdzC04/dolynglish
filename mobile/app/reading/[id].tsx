@@ -1,8 +1,9 @@
 /**
  * Pantalla de lectura individual
- * Muestra el contenido completo de una lectura
+ * Muestra el contenido completo de una lectura con funcionalidad de explicación
  */
 
+import { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Colors } from "@/constants/Colors";
@@ -11,7 +12,9 @@ import { Colors } from "@/constants/Colors";
 import {
   ReadingContent,
   CompletedBanner,
+  ExplanationModal,
   useReading,
+  useExplanation,
 } from "@/src/features/readings";
 
 // Shared
@@ -22,10 +25,44 @@ export default function ReadingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { reading, isLoading, error } = useReading(Number(id));
+  
+  // Estado para explicaciones
+  const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
+  const [showExplanationModal, setShowExplanationModal] = useState(false);
+  const { 
+    explanation, 
+    isLoading: isLoadingExplanation, 
+    error: explanationError,
+    rateLimitInfo,
+    fromCache,
+    requestExplanation,
+    clear: clearExplanation
+  } = useExplanation(Number(id));
 
   // Navegar a evaluación
   const handleEvaluate = () => {
     router.push(`/reading/evaluate?id=${id}`);
+  };
+
+  // Handler para selección de oración
+  const handleSentenceSelect = async (sentence: string) => {
+    setSelectedSentence(sentence);
+    setShowExplanationModal(true);
+    await requestExplanation(sentence);
+  };
+
+  // Handler para cerrar modal
+  const handleCloseExplanation = () => {
+    setShowExplanationModal(false);
+    clearExplanation();
+    setSelectedSentence(null);
+  };
+
+  // Handler para reintentar
+  const handleRetryExplanation = () => {
+    if (selectedSentence) {
+      requestExplanation(selectedSentence);
+    }
   };
 
   if (isLoading) {
@@ -63,8 +100,11 @@ export default function ReadingScreen() {
         contentStyle={styles.scrollContent}
         paddingVertical={20}
       >
-        {/* Contenido de la lectura */}
-        <ReadingContent reading={reading} />
+        {/* Contenido de la lectura con callback de selección */}
+        <ReadingContent 
+          reading={reading} 
+          onSentenceSelect={handleSentenceSelect}
+        />
 
         {/* Estado de completado */}
         {isCompleted && reading.score !== null && (
@@ -74,6 +114,18 @@ export default function ReadingScreen() {
           />
         )}
       </Screen>
+
+      {/* Modal de explicación */}
+      <ExplanationModal
+        visible={showExplanationModal}
+        explanation={explanation}
+        isLoading={isLoadingExplanation}
+        error={explanationError}
+        rateLimitInfo={rateLimitInfo}
+        fromCache={fromCache}
+        onClose={handleCloseExplanation}
+        onRetry={handleRetryExplanation}
+      />
 
       {/* Botón de evaluación (solo si no está completado) */}
       {!isCompleted && (

@@ -3,10 +3,10 @@
  * Centraliza toda la lógica de peticiones HTTP
  */
 
-import { ENV } from '../config/env';
-import { STORAGE_KEYS } from '../config/constants';
-import { secureStorage } from '../storage/secure-storage';
-import { ApiError } from './api-error';
+import { ENV } from "../config/env";
+import { STORAGE_KEYS } from "../config/constants";
+import { secureStorage } from "../storage/secure-storage";
+import { ApiError } from "./api-error";
 
 /**
  * Respuesta genérica de la API
@@ -19,7 +19,7 @@ export interface ApiResponse<T> {
 /**
  * Opciones para las peticiones HTTP
  */
-export interface RequestOptions extends Omit<RequestInit, 'body'> {
+export interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: object;
   requiresAuth?: boolean;
 }
@@ -32,6 +32,7 @@ class ApiClient {
 
   constructor(baseUrl: string = ENV.API_BASE_URL) {
     this.baseUrl = baseUrl;
+    console.log(`API Client initialized with base URL: ${this.baseUrl}`);
   }
 
   /**
@@ -49,7 +50,7 @@ class ApiClient {
 
     // Construir headers
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
@@ -58,9 +59,9 @@ class ApiClient {
       const token = await this.getAuthToken();
       // Si no hay token y la petición requiere autenticación, fallar rápido
       if (!token) {
-        throw new ApiError('Sin token de acceso', 401, { code: 'NO_TOKEN' });
+        throw new ApiError("Sin token de acceso", 401, { code: "NO_TOKEN" });
       }
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
     }
 
     const url = `${this.baseUrl}${endpoint}`;
@@ -88,12 +89,14 @@ class ApiClient {
       // Manejar errores de red/conexión de forma más descriptiva
       if (error instanceof TypeError) {
         // TypeError con 'fetch' indica problemas de red
-        if (error.message.includes('Network request failed') || 
-            error.message.includes('Failed to fetch')) {
+        if (
+          error.message.includes("Network request failed") ||
+          error.message.includes("Failed to fetch")
+        ) {
           throw new ApiError(
-            'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.',
+            "Sin conexión a internet. Verifica tu conexión e intenta de nuevo.",
             0,
-            { code: 'NETWORK_ERROR' }
+            { code: "NETWORK_ERROR" },
           );
         }
       }
@@ -101,17 +104,17 @@ class ApiClient {
       // Envolver otros errores
       if (error instanceof Error) {
         // Detectar errores de timeout
-        if (error.name === 'AbortError') {
+        if (error.name === "AbortError") {
           throw new ApiError(
-            'La solicitud tardó demasiado. Intenta de nuevo.',
+            "La solicitud tardó demasiado. Intenta de nuevo.",
             0,
-            { code: 'TIMEOUT' }
+            { code: "TIMEOUT" },
           );
         }
-        throw new ApiError(error.message, 0, { code: 'UNKNOWN_ERROR' });
+        throw new ApiError(error.message, 0, { code: "UNKNOWN_ERROR" });
       }
 
-      throw new ApiError('Error de conexión', 0, { code: 'CONNECTION_ERROR' });
+      throw new ApiError("Error de conexión", 0, { code: "CONNECTION_ERROR" });
     }
   }
 
@@ -119,35 +122,47 @@ class ApiClient {
    * GET request
    */
   async get<T>(endpoint: string, requiresAuth = true): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET', requiresAuth });
+    return this.request<T>(endpoint, { method: "GET", requiresAuth });
   }
 
   /**
    * POST request
    */
-  async post<T>(endpoint: string, body?: object, requiresAuth = true): Promise<T> {
-    return this.request<T>(endpoint, { method: 'POST', body, requiresAuth });
+  async post<T>(
+    endpoint: string,
+    body?: object,
+    requiresAuth = true,
+  ): Promise<T> {
+    return this.request<T>(endpoint, { method: "POST", body, requiresAuth });
   }
 
   /**
    * PUT request
    */
-  async put<T>(endpoint: string, body?: object, requiresAuth = true): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PUT', body, requiresAuth });
+  async put<T>(
+    endpoint: string,
+    body?: object,
+    requiresAuth = true,
+  ): Promise<T> {
+    return this.request<T>(endpoint, { method: "PUT", body, requiresAuth });
   }
 
   /**
    * PATCH request
    */
-  async patch<T>(endpoint: string, body?: object, requiresAuth = true): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PATCH', body, requiresAuth });
+  async patch<T>(
+    endpoint: string,
+    body?: object,
+    requiresAuth = true,
+  ): Promise<T> {
+    return this.request<T>(endpoint, { method: "PATCH", body, requiresAuth });
   }
 
   /**
    * DELETE request
    */
   async delete<T>(endpoint: string, requiresAuth = true): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE', requiresAuth });
+    return this.request<T>(endpoint, { method: "DELETE", requiresAuth });
   }
 }
 

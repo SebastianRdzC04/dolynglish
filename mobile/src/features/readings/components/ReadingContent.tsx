@@ -1,10 +1,11 @@
 /**
  * Componente ReadingContent
- * Muestra el contenido completo de una lectura
+ * Muestra el contenido completo de una lectura con oraciones seleccionables
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/Colors';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Badge, Divider } from '@/src/shared/components/ui';
@@ -14,10 +15,25 @@ import { getCategoryLabel, difficultyLabels, difficultyConfig, getEstimatedTime 
 interface ReadingContentProps {
   /** Datos de la lectura */
   reading: Reading;
+  /** Callback cuando se selecciona una oración */
+  onSentenceSelect?: (sentence: string, index: number) => void;
 }
 
-export function ReadingContent({ reading }: ReadingContentProps) {
+export function ReadingContent({ reading, onSentenceSelect }: ReadingContentProps) {
   const diffConfig = difficultyConfig[reading.difficulty];
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  // Dividir contenido en oraciones
+  const sentences = useMemo(() => {
+    // Regex para dividir por . ! ? pero mantener el signo
+    return reading.content.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+  }, [reading.content]);
+
+  const handleSentencePress = (sentence: string, index: number) => {
+    setSelectedIndex(index);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSentenceSelect?.(sentence, index);
+  };
 
   return (
     <View style={styles.container}>
@@ -66,8 +82,24 @@ export function ReadingContent({ reading }: ReadingContentProps) {
 
       <Divider spacing={8} />
 
-      {/* Contenido */}
-      <Text style={styles.content}>{reading.content}</Text>
+      {/* Contenido con oraciones seleccionables */}
+      <View style={styles.contentContainer}>
+        {sentences.map((sentence, index) => (
+          <Pressable
+            key={index}
+            style={({ pressed }) => [
+              styles.sentence,
+              pressed && styles.sentencePressed,
+              selectedIndex === index && styles.sentenceSelected,
+            ]}
+            onPress={() => handleSentencePress(sentence.trim(), index)}
+          >
+            <Text style={styles.content}>
+              {sentence}{' '}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
@@ -118,6 +150,20 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     lineHeight: 22,
     fontStyle: 'italic',
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  sentence: {
+    borderRadius: 4,
+  },
+  sentencePressed: {
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  sentenceSelected: {
+    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+    borderRadius: 4,
   },
   content: {
     fontSize: 17,

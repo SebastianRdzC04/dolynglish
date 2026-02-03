@@ -12,6 +12,8 @@ import {
   EvaluateRequest,
   GenerateReadingOptions,
   GenerateReadingResponse,
+  ExplanationResponse,
+  ExplainSelectionRequest,
 } from '../types';
 
 /**
@@ -81,6 +83,17 @@ class ReadingsService {
    */
   async delete(id: number): Promise<void> {
     await apiClient.delete(`/readings/${id}`);
+  }
+
+  /**
+   * Explica una selección de texto en contexto
+   */
+  async explain(id: number, request: ExplainSelectionRequest): Promise<ExplanationResponse> {
+    const response = await apiClient.post<ApiResponse<ExplanationResponse>>(
+      `/readings/${id}/explain`,
+      request
+    );
+    return response.data;
   }
 }
 

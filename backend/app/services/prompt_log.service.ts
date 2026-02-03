@@ -187,6 +187,107 @@ export default class PromptLogService {
     }
   }
 
+  /**
+   * Log cuando se solicita una explicación
+   */
+  async logExplanationRequested(
+    textId: number,
+    userId: number,
+    selection: string
+  ): Promise<void> {
+    try {
+      await this.repository.create({
+        level: 'info',
+        event: 'explanation_requested',
+        message: 'Text explanation requested',
+        userId,
+        textId,
+        params: { selection, selectionLength: selection.length },
+      })
+    } catch (error) {
+      console.error('Failed to log explanation request:', error)
+    }
+  }
+
+  /**
+   * Log cuando se completa una explicación
+   */
+  async logExplanationCompleted(
+    textId: number,
+    userId: number,
+    selection: string,
+    difficultyLevel: string,
+    confidence: number,
+    durationMs?: number
+  ): Promise<void> {
+    try {
+      await this.repository.create({
+        level: 'info',
+        event: 'explanation_completed',
+        message: 'Text explanation completed successfully',
+        userId,
+        textId,
+        params: {
+          selection,
+          selectionLength: selection.length,
+          difficultyLevel,
+          confidence,
+        },
+        durationMs,
+      })
+    } catch (error) {
+      console.error('Failed to log explanation completion:', error)
+    }
+  }
+
+  /**
+   * Log cuando falla una explicación
+   */
+  async logExplanationFailed(
+    error: Error,
+    textId: number,
+    userId: number,
+    selection: string
+  ): Promise<void> {
+    try {
+      await this.repository.create({
+        level: 'error',
+        event: 'explanation_failed',
+        message: 'Failed to generate text explanation',
+        userId,
+        textId,
+        params: { selection, selectionLength: selection.length },
+        errorMessage: error.message,
+        errorStack: error.stack,
+      })
+    } catch (logError) {
+      console.error('Failed to log explanation error:', logError)
+    }
+  }
+
+  /**
+   * Log cuando se alcanza el límite de explicaciones
+   */
+  async logExplanationRateLimited(
+    textId: number,
+    userId: number,
+    usedToday: number,
+    limit: number
+  ): Promise<void> {
+    try {
+      await this.repository.create({
+        level: 'warn',
+        event: 'explanation_rate_limited',
+        message: `User reached daily explanation limit: ${usedToday}/${limit}`,
+        userId,
+        textId,
+        params: { usedToday, limit },
+      })
+    } catch (error) {
+      console.error('Failed to log rate limit:', error)
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MÉTODOS DE CONSULTA
   // ═══════════════════════════════════════════════════════════════════════════
@@ -212,6 +313,22 @@ export default class PromptLogService {
    */
   async getGenerationStats(fromDate?: string, toDate?: string): Promise<PromptLogStats> {
     return this.repository.getStats(fromDate, toDate)
+  }
+
+  /**
+   * Verificar si el usuario puede solicitar otra explicación (rate limiting)
+   * @returns { canRequest: boolean, usedToday: number, limit: number }
+   */
+  async canUserRequestExplanation(
+    userId: number,
+    dailyLimit: number = 30
+  ): Promise<{ canRequest: boolean; usedToday: number; limit: number }> {
+    const usedToday = await this.repository.countUserExplanationsToday(userId)
+    return {
+      canRequest: usedToday < dailyLimit,
+      usedToday,
+      limit: dailyLimit,
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

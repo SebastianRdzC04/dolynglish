@@ -76,6 +76,9 @@ router
 
     // Enviar respuesta de comprensión para evaluación
     router.post('/:id/evaluate', [IasController, 'responseText'])
+
+    // Explicar selección de texto en contexto
+    router.post('/:id/explain', [IasController, 'explainSelection'])
   })
   .prefix('/readings')
   .use(middleware.auth({ guards: ['api'] }))
