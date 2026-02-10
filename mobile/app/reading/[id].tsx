@@ -1,11 +1,13 @@
 /**
  * Pantalla de lectura individual
  * Muestra el contenido completo de una lectura con funcionalidad de explicación
+ * Soporta selección libre de texto para consultar explicaciones
  */
 
-import { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { useState, useCallback } from "react";
+import { View, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import { Colors } from "@/constants/Colors";
 
 // Features
@@ -13,6 +15,7 @@ import {
   ReadingContent,
   CompletedBanner,
   ExplanationModal,
+  SelectionToolbar,
   useReading,
   useExplanation,
 } from "@/src/features/readings";
@@ -25,18 +28,19 @@ export default function ReadingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { reading, isLoading, error } = useReading(Number(id));
-  
-  // Estado para explicaciones
-  const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
+
+  // Estado para selección de texto y explicaciones
+  const [selectedText, setSelectedText] = useState<string>("");
+  const [hasSelection, setHasSelection] = useState(false);
   const [showExplanationModal, setShowExplanationModal] = useState(false);
-  const { 
-    explanation, 
-    isLoading: isLoadingExplanation, 
+  const {
+    explanation,
+    isLoading: isLoadingExplanation,
     error: explanationError,
     rateLimitInfo,
     fromCache,
     requestExplanation,
-    clear: clearExplanation
+    clear: clearExplanation,
   } = useExplanation(Number(id));
 
   // Navegar a evaluación
@@ -44,24 +48,48 @@ export default function ReadingScreen() {
     router.push(`/reading/evaluate?id=${id}`);
   };
 
-  // Handler para selección de oración
-  const handleSentenceSelect = async (sentence: string) => {
-    setSelectedSentence(sentence);
-    setShowExplanationModal(true);
-    await requestExplanation(sentence);
-  };
+  // Handler para cuando el usuario selecciona texto
+  const handleTextSelect = useCallback((text: string) => {
+    setSelectedText(text);
+  }, []);
+
+  // Handler para cambio de estado de selección
+  const handleSelectionChange = useCallback((selected: boolean) => {
+    setHasSelection(selected);
+    if (!selected) {
+      setSelectedText("");
+    }
+  }, []);
+
+  // Handler para explicar texto seleccionado
+  const handleExplain = useCallback(
+    async (text: string) => {
+      setShowExplanationModal(true);
+      await requestExplanation(text);
+    },
+    [requestExplanation]
+  );
+
+  // Handler para copiar texto seleccionado
+  const handleCopy = useCallback(async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert("Copied", "Text copied to clipboard");
+    } catch {
+      Alert.alert("Error", "Could not copy text");
+    }
+  }, []);
 
   // Handler para cerrar modal
   const handleCloseExplanation = () => {
     setShowExplanationModal(false);
     clearExplanation();
-    setSelectedSentence(null);
   };
 
   // Handler para reintentar
   const handleRetryExplanation = () => {
-    if (selectedSentence) {
-      requestExplanation(selectedSentence);
+    if (selectedText) {
+      requestExplanation(selectedText);
     }
   };
 
@@ -100,10 +128,11 @@ export default function ReadingScreen() {
         contentStyle={styles.scrollContent}
         paddingVertical={20}
       >
-        {/* Contenido de la lectura con callback de selección */}
-        <ReadingContent 
-          reading={reading} 
-          onSentenceSelect={handleSentenceSelect}
+        {/* Contenido de la lectura con selección de texto */}
+        <ReadingContent
+          reading={reading}
+          onTextSelect={handleTextSelect}
+          onSelectionChange={handleSelectionChange}
         />
 
         {/* Estado de completado */}
@@ -127,8 +156,19 @@ export default function ReadingScreen() {
         onRetry={handleRetryExplanation}
       />
 
-      {/* Botón de evaluación (solo si no está completado) */}
-      {!isCompleted && (
+      {/* Toolbar de selección (aparece cuando hay texto seleccionado) */}
+      {!showExplanationModal && (
+        <SelectionToolbar
+          visible={hasSelection}
+          selectedText={selectedText}
+          isLoading={isLoadingExplanation}
+          onExplain={handleExplain}
+          onCopy={handleCopy}
+        />
+      )}
+
+      {/* Botón de evaluación (solo si no está completado y no hay selección activa) */}
+      {!isCompleted && !hasSelection && (
         <View style={styles.footer}>
           <Button icon="arrow-forward" iconPosition="right" onPress={handleEvaluate}>
             Terminé de leer - Evaluar comprensión
@@ -141,7 +181,7 @@ export default function ReadingScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 100, // Espacio para el botón flotante
+    paddingBottom: 100, // Espacio para el botón flotante o toolbar
   },
   errorContainer: {
     flex: 1,

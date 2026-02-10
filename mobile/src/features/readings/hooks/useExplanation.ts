@@ -5,11 +5,22 @@
 
 import { useState, useCallback } from 'react';
 import { readingsService } from '../services';
-import { ExplanationResponse } from '../types';
+import { ExplanationResponse, ExplainSelectionRequest } from '../types';
+import { ApiError } from '@/src/core/api/api-error';
 import { 
   getCachedExplanation, 
   cacheExplanation 
 } from '../utils/explanationCache';
+
+/**
+ * Detecta automáticamente el tipo de selección basado en el texto
+ */
+function detectSelectionType(text: string): ExplainSelectionRequest['type'] {
+  const words = text.trim().split(/\s+/);
+  if (words.length === 1) return 'word';
+  if (words.length <= 7) return 'phrase';
+  return 'sentence';
+}
 
 interface UseExplanationReturn {
   /** Explicación actual */
@@ -72,7 +83,7 @@ export function useExplanation(readingId: number): UseExplanationReturn {
         // 2. Si no hay caché, hacer request a API
         const result = await readingsService.explain(readingId, {
           selection: trimmed,
-          type: 'sentence',
+          type: detectSelectionType(trimmed),
         });
 
         setExplanation(result);
@@ -83,13 +94,10 @@ export function useExplanation(readingId: number): UseExplanationReturn {
         console.log('💾 Explanation cached successfully');
 
       } catch (err: any) {
-        // Handle rate limit specifically
-        if (err.response?.status === 429) {
-          const data = err.response?.data?.data;
-          if (data) {
-            setRateLimitInfo({ usedToday: data.usedToday, limit: data.limit });
-          }
-          setError(err.response?.data?.message || 'You have reached the daily explanation limit. Try again tomorrow.');
+        // Handle rate limit specifically (ApiError uses statusCode)
+        if (err instanceof ApiError && err.statusCode === 429) {
+          setRateLimitInfo({ usedToday: 30, limit: 30 });
+          setError(err.message || 'You have reached the daily explanation limit. Try again tomorrow.');
         } else {
           const errorMessage = err instanceof Error ? err.message : 'Failed to get explanation';
           setError(errorMessage);
