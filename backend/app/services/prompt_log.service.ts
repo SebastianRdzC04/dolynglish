@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import logger from '@adonisjs/core/services/logger'
 import PromptLogRepository from '../repository/prompt_log.repository.js'
 import type { PromptLogDto, PromptLogFilters, PromptLogStats } from '../types/prompt_log.js'
 import type {
@@ -38,7 +39,7 @@ export default class PromptLogService {
       })
     } catch (error) {
       // No lanzar error si falla el logging, solo logear en consola
-      console.error('Failed to log prompt generation:', error)
+      logger.error({ err: error }, 'Failed to log prompt generation')
     }
   }
 
@@ -61,7 +62,7 @@ export default class PromptLogService {
         errorStack: error.stack,
       })
     } catch (logError) {
-      console.error('Failed to log prompt generation error:', logError)
+      logger.error({ err: logError }, 'Failed to log prompt generation error')
     }
   }
 
@@ -85,7 +86,7 @@ export default class PromptLogService {
         durationMs,
       })
     } catch (error) {
-      console.error('Failed to log text save:', error)
+      logger.error({ err: error }, 'Failed to log text save')
     }
   }
 
@@ -104,7 +105,7 @@ export default class PromptLogService {
         errorStack: error.stack,
       })
     } catch (logError) {
-      console.error('Failed to log text save error:', logError)
+      logger.error({ err: logError }, 'Failed to log text save error')
     }
   }
 
@@ -129,7 +130,7 @@ export default class PromptLogService {
         durationMs,
       })
     } catch (error) {
-      console.error('Failed to log evaluation:', error)
+      logger.error({ err: error }, 'Failed to log evaluation')
     }
   }
 
@@ -148,7 +149,7 @@ export default class PromptLogService {
         errorStack: error.stack,
       })
     } catch (logError) {
-      console.error('Failed to log evaluation error:', logError)
+      logger.error({ err: logError }, 'Failed to log evaluation error')
     }
   }
 
@@ -165,7 +166,7 @@ export default class PromptLogService {
         userId,
       })
     } catch (error) {
-      console.error('Failed to log seed parse:', error)
+      logger.error({ err: error }, 'Failed to log seed parse')
     }
   }
 
@@ -183,18 +184,14 @@ export default class PromptLogService {
         errorMessage: error.message,
       })
     } catch (logError) {
-      console.error('Failed to log seed parse error:', logError)
+      logger.error({ err: logError }, 'Failed to log seed parse error')
     }
   }
 
   /**
    * Log cuando se solicita una explicación
    */
-  async logExplanationRequested(
-    textId: number,
-    userId: number,
-    selection: string
-  ): Promise<void> {
+  async logExplanationRequested(textId: number, userId: number, selection: string): Promise<void> {
     try {
       await this.repository.create({
         level: 'info',
@@ -205,7 +202,7 @@ export default class PromptLogService {
         params: { selection, selectionLength: selection.length },
       })
     } catch (error) {
-      console.error('Failed to log explanation request:', error)
+      logger.error({ err: error }, 'Failed to log explanation request')
     }
   }
 
@@ -236,7 +233,7 @@ export default class PromptLogService {
         durationMs,
       })
     } catch (error) {
-      console.error('Failed to log explanation completion:', error)
+      logger.error({ err: error }, 'Failed to log explanation completion')
     }
   }
 
@@ -261,7 +258,7 @@ export default class PromptLogService {
         errorStack: error.stack,
       })
     } catch (logError) {
-      console.error('Failed to log explanation error:', logError)
+      logger.error({ err: logError }, 'Failed to log explanation error')
     }
   }
 
@@ -284,7 +281,7 @@ export default class PromptLogService {
         params: { usedToday, limit },
       })
     } catch (error) {
-      console.error('Failed to log rate limit:', error)
+      logger.error({ err: error }, 'Failed to log rate limit')
     }
   }
 

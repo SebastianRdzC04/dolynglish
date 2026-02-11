@@ -1,11 +1,9 @@
 import { Groq } from 'groq-sdk'
-import dotenv from 'dotenv'
+import env from '#start/env'
 import { AIService, ChatMessage } from '../../types/ia_connector.js'
 
-dotenv.config()
-
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: env.get('GROQ_API_KEY'),
 })
 
 export const groqService: AIService = {

@@ -109,8 +109,11 @@ export interface GenerateReadingResponse {
     category: string;
     subcategories: string[];
     size: string;
+    difficulty?: string;
+    cefrLevel?: string;
     timePeriod?: string;
     contentType: string;
+    aiReturnedCategory?: string;
   };
 }
 

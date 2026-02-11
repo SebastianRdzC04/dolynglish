@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { inject } from '@adonisjs/core'
+import logger from '@adonisjs/core/services/logger'
 import StreakService from '#services/streak.service'
+import { streakQueryValidator } from '#validators/reading'
 import type { ApiResponse } from '../types/api_response.js'
 import type { StreakResponse, UserProfileResponse } from '../types/streak.js'
 
@@ -9,7 +11,7 @@ export default class UserController {
   constructor(private streakService: StreakService) {}
 
   /**
-   * Obtiene el perfil del usuario autenticado
+   * Get the authenticated user's profile.
    * GET /user/profile
    */
   async getProfile({ response, auth }: HttpContext) {
@@ -22,26 +24,18 @@ export default class UserController {
   }
 
   /**
-   * Obtiene los datos de racha del usuario autenticado
+   * Get the authenticated user's streak data.
    * GET /user/streak
    *
-   *
-   * Query params opcionales:
-   * - days: número de días de historial (default 10, max 30)
+   * Query params:
+   * - days: number of history days (optional, default 10, max 30)
    */
   async getStreak({ request, response, auth }: HttpContext) {
     const user = auth.user!
 
-    // Obtener días de historial del query string (default 10, max 30)
-    const daysParam = request.qs().days
-    let historyDays = 10
-
-    if (daysParam) {
-      const parsed = Number.parseInt(daysParam, 10)
-      if (!Number.isNaN(parsed) && parsed > 0) {
-        historyDays = Math.min(parsed, 30) // Máximo 30 días
-      }
-    }
+    // Validate query params through VineJS
+    const { days } = await streakQueryValidator.validate(request.qs())
+    const historyDays = days ?? 10
 
     try {
       const streakData = await this.streakService.getStreakData(user.id, historyDays)
@@ -51,7 +45,7 @@ export default class UserController {
         data: streakData,
       } as ApiResponse<StreakResponse>)
     } catch (error) {
-      console.error('Error getting streak data:', error)
+      logger.error({ err: error }, 'Error getting streak data')
       return response.internalServerError({
         message: 'Failed to retrieve streak data',
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -60,10 +54,10 @@ export default class UserController {
   }
 
   /**
-   * Obtiene el perfil completo con datos de racha incluidos
+   * Get full profile with streak data combined.
    * GET /user/me
    *
-   * Combina perfil y streak en una sola respuesta para optimizar requests del móvil
+   * Combines profile and streak in a single response to optimise mobile requests.
    */
   async getMe({ response, auth }: HttpContext) {
     const user = auth.user!
@@ -79,7 +73,7 @@ export default class UserController {
         },
       } as ApiResponse<{ profile: UserProfileResponse; streak: StreakResponse }>)
     } catch (error) {
-      console.error('Error getting user data:', error)
+      logger.error({ err: error }, 'Error getting user data')
       return response.internalServerError({
         message: 'Failed to retrieve user data',
         error: error instanceof Error ? error.message : 'Unknown error',

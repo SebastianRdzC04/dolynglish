@@ -1,48 +1,49 @@
-import Texto from '#models/texto'
+import { DateTime } from 'luxon'
+import Reading from '#models/reading'
 import type { CreateTextDto, EvaluationResult, TextStatus } from '../types/api_response.js'
 
 export default class TextRepository {
   /**
-   * Crea un nuevo texto con todos los campos
+   * Create a new reading with all fields.
    */
-  async createText(data: CreateTextDto): Promise<Texto> {
-    const text = new Texto()
-    text.userId = data.userId
-    text.title = data.title
-    text.description = data.description
-    text.content = data.content
-    text.category = data.category
-    text.difficulty = data.difficulty
-    text.wordCount = data.wordCount
-    text.status = 'pending'
-    text.score = null
-    text.passed = null
-    await text.save()
-    return text
+  async createText(data: CreateTextDto): Promise<Reading> {
+    const reading = new Reading()
+    reading.userId = data.userId
+    reading.title = data.title
+    reading.description = data.description
+    reading.content = data.content
+    reading.category = data.category
+    reading.difficulty = data.difficulty
+    reading.wordCount = data.wordCount
+    reading.status = 'pending'
+    reading.score = null
+    reading.passed = null
+    await reading.save()
+    return reading
   }
 
   /**
-   * Obtiene un texto por ID (excluyendo eliminados)
+   * Get a reading by ID (excluding soft-deleted).
    */
-  async getById(id: number): Promise<Texto | null> {
-    return Texto.query().where('id', id).whereNull('deleted_at').first()
+  async getById(id: number): Promise<Reading | null> {
+    return Reading.query().where('id', id).whereNull('deleted_at').first()
   }
 
   /**
-   * Obtiene todos los textos de un usuario (excluyendo eliminados)
+   * Get all readings for a user (excluding soft-deleted).
    */
-  async getAllByUserId(userId: number): Promise<Texto[]> {
-    return Texto.query()
+  async getAllByUserId(userId: number): Promise<Reading[]> {
+    return Reading.query()
       .where('user_id', userId)
       .whereNull('deleted_at')
       .orderBy('created_at', 'desc')
   }
 
   /**
-   * Obtiene textos por usuario y estado
+   * Get readings by user and status.
    */
-  async getByUserIdAndStatus(userId: number, status: TextStatus): Promise<Texto[]> {
-    return Texto.query()
+  async getByUserIdAndStatus(userId: number, status: TextStatus): Promise<Reading[]> {
+    return Reading.query()
       .where('user_id', userId)
       .where('status', status)
       .whereNull('deleted_at')
@@ -50,10 +51,10 @@ export default class TextRepository {
   }
 
   /**
-   * Cuenta textos pendientes de un usuario
+   * Count pending readings for a user.
    */
   async countPendingByUserId(userId: number): Promise<number> {
-    const result = await Texto.query()
+    const result = await Reading.query()
       .where('user_id', userId)
       .where('status', 'pending')
       .whereNull('deleted_at')
@@ -64,45 +65,45 @@ export default class TextRepository {
   }
 
   /**
-   * Actualiza el resultado de evaluación de un texto
+   * Update the evaluation result on a reading.
    */
   async updateEvaluationResult(
     textId: number,
     evaluation: EvaluationResult
-  ): Promise<Texto | null> {
-    const text = await this.getById(textId)
-    if (!text) return null
+  ): Promise<Reading | null> {
+    const reading = await this.getById(textId)
+    if (!reading) return null
 
-    text.score = evaluation.score
-    text.passed = evaluation.passed
-    text.status = 'completed'
-    await text.save()
+    reading.score = evaluation.score
+    reading.passed = evaluation.passed
+    reading.status = 'completed'
+    await reading.save()
 
-    return text
+    return reading
   }
 
   /**
-   * Marca un texto como completado
+   * Mark a reading as completed.
    */
-  async markAsCompleted(textId: number): Promise<Texto | null> {
-    const text = await this.getById(textId)
-    if (!text) return null
+  async markAsCompleted(textId: number): Promise<Reading | null> {
+    const reading = await this.getById(textId)
+    if (!reading) return null
 
-    text.status = 'completed'
-    await text.save()
+    reading.status = 'completed'
+    await reading.save()
 
-    return text
+    return reading
   }
 
   /**
-   * Soft delete de un texto
+   * Soft-delete a reading.
    */
   async softDelete(textId: number): Promise<boolean> {
-    const text = await this.getById(textId)
-    if (!text) return false
+    const reading = await this.getById(textId)
+    if (!reading) return false
 
-    text.deletedAt = text.deletedAt ?? (await import('luxon')).DateTime.now()
-    await text.save()
+    reading.deletedAt = DateTime.now()
+    await reading.save()
 
     return true
   }

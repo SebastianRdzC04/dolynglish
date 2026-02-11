@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
-import Texto from './texto.js'
+import Reading from './reading.js'
 import type { LogLevel, LogEvent } from '../types/prompt_log.js'
 
 export default class PromptLog extends BaseModel {
@@ -56,8 +56,8 @@ export default class PromptLog extends BaseModel {
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
 
-  @belongsTo(() => Texto)
-  declare texto: BelongsTo<typeof Texto>
+  @belongsTo(() => Reading)
+  declare reading: BelongsTo<typeof Reading>
 
   /**
    * Serializa el modelo para respuesta de API

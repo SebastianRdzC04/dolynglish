@@ -3,7 +3,7 @@ import { Readable } from 'node:stream'
 import { AIService, ChatMessage } from '../../types/ia_connector.js'
 import { groqService } from './groq.service.js'
 
-class IAHttpService {
+export default class IAHttpService {
   private services: AIService[] = [groqService]
   private currentServiceIndex = 0
 
@@ -50,7 +50,7 @@ class IAHttpService {
   }
 
   /**
-   * Obtiene una respuesta completa (sin streaming) de la IA
+   * Get a full (non-streaming) AI response.
    */
   async getFullResponse(messages: ChatMessage[]): Promise<string> {
     const service = this.getNextService()
@@ -64,5 +64,3 @@ class IAHttpService {
     return fullText
   }
 }
-
-export const iaHttpService = new IAHttpService()

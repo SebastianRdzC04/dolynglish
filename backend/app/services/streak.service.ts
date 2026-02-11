@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { inject } from '@adonisjs/core'
 import User from '#models/user'
-import Texto from '#models/texto'
+import Reading from '#models/reading'
 import type {
   StreakDay,
   StreakResponse,
@@ -134,8 +134,8 @@ export default class StreakService {
     const today = DateTime.now().startOf('day')
     const startDate = today.minus({ days: days - 1 })
 
-    // Obtener textos completados exitosamente en el rango de fechas
-    const completedTexts = await Texto.query()
+    // Get successfully completed readings in the date range
+    const completedReadings = await Reading.query()
       .where('user_id', userId)
       .where('status', 'completed')
       .where('passed', true)
@@ -146,8 +146,8 @@ export default class StreakService {
     // Agrupar por fecha
     const completionsByDate = new Map<string, number>()
 
-    for (const texto of completedTexts) {
-      const dateKey = texto.updatedAt.startOf('day').toISODate()!
+    for (const reading of completedReadings) {
+      const dateKey = reading.updatedAt.startOf('day').toISODate()!
       const current = completionsByDate.get(dateKey) ?? 0
       completionsByDate.set(dateKey, current + 1)
     }

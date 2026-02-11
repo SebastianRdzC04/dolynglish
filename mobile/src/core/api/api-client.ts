@@ -73,6 +73,11 @@ class ApiClient {
         body: body ? JSON.stringify(body) : undefined,
       });
 
+      // 204 No Content has no body to parse
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
       const data = await response.json();
 
       if (!response.ok) {

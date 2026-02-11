@@ -52,18 +52,10 @@ class ReadingsService {
    * Genera una nueva lectura
    */
   async generate(options?: GenerateReadingOptions): Promise<GenerateReadingResponse> {
-    // Construir query string con opciones
-    const params = new URLSearchParams();
-    if (options?.category) params.append('category', options.category);
-    if (options?.difficulty) params.append('difficulty', options.difficulty);
-    if (options?.size) params.append('size', options.size);
-    if (options?.timePeriod) params.append('timePeriod', options.timePeriod);
-    if (options?.seed) params.append('seed', options.seed);
-
-    const queryString = params.toString();
-    const endpoint = `/readings/generate${queryString ? `?${queryString}` : ''}`;
-
-    const response = await apiClient.post<ApiResponse<GenerateReadingResponse>>(endpoint);
+    const response = await apiClient.post<ApiResponse<GenerateReadingResponse>>(
+      '/readings',
+      options
+    );
     return response.data;
   }
 
@@ -90,7 +82,7 @@ class ReadingsService {
    */
   async explain(id: number, request: ExplainSelectionRequest): Promise<ExplanationResponse> {
     const response = await apiClient.post<ApiResponse<ExplanationResponse>>(
-      `/readings/${id}/explain`,
+      `/readings/${id}/explanations`,
       request
     );
     return response.data;

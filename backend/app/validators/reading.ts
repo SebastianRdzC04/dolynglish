@@ -1,7 +1,10 @@
 import vine from '@vinejs/vine'
 
 /**
- * Validador para los query params de generación de texto
+ * Validator for reading generation request body.
+ *
+ * All fields are optional – the backend picks random defaults
+ * for anything the user does not specify.
  */
 export const generateTextValidator = vine.compile(
   vine.object({
@@ -16,18 +19,25 @@ export const generateTextValidator = vine.compile(
 )
 
 /**
- * Tipo inferido del validador
+ * Validator for the comprehension evaluation request body.
  */
-export type GenerateTextInput = {
-  category?: 'technology' | 'history' | 'education' | 'programming' | 'culture' | 'pop_culture'
-  size?: 'short' | 'medium' | 'long'
-  difficulty?: 'easy' | 'medium' | 'hard'
-  timePeriod?: string
-  seed?: string
-}
+export const evaluateReadingValidator = vine.compile(
+  vine.object({
+    userResponse: vine.string().trim().minLength(1),
+  })
+)
 
 /**
- * Validador para explicación de selección de texto
+ * Validator for the streak query params.
+ */
+export const streakQueryValidator = vine.compile(
+  vine.object({
+    days: vine.number().positive().max(30).optional(),
+  })
+)
+
+/**
+ * Validator for text selection explanation request body.
  */
 export const explainSelectionValidator = vine.compile(
   vine.object({
@@ -35,11 +45,3 @@ export const explainSelectionValidator = vine.compile(
     type: vine.enum(['word', 'phrase', 'sentence']).optional(),
   })
 )
-
-/**
- * Tipo inferido del validador de explicación
- */
-export type ExplainSelectionInput = {
-  selection: string
-  type?: 'word' | 'phrase' | 'sentence'
-}

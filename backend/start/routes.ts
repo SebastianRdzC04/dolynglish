@@ -10,11 +10,13 @@
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
 
-const IasController = () => import('#controllers/ias_controller')
 const AuthController = () => import('#controllers/auth_controller')
 const UserController = () => import('#controllers/user_controller')
+const ReadingsController = () => import('#controllers/readings_controller')
+const ExplanationsController = () => import('#controllers/explanations_controller')
+const IasController = () => import('#controllers/ias_controller')
 
-// Health check
+// ── Health check ────────────────────────────────────────────────────────────
 router.get('/', async () => {
   return {
     message: 'Dolynglish API is running',
@@ -25,68 +27,65 @@ router.get('/', async () => {
   }
 })
 
-// Endpoint de prueba de IA (sin autenticación)
-router.post('/mensaje', [IasController, 'mensaje'])
-
-// Rutas de autenticación
+// ── Authentication ──────────────────────────────────────────────────────────
 router
   .group(() => {
     router.post('/login', [AuthController, 'login'])
     router.post('/register', [AuthController, 'register'])
+    router.post('/logout', [AuthController, 'logout']).use(middleware.auth({ guards: ['api'] }))
+    router.get('/me', [AuthController, 'me']).use(middleware.auth({ guards: ['api'] }))
   })
   .prefix('/auth')
 
-// Opciones de generación (público, sin autenticación)
-router.get('/readings/options', [IasController, 'getGenerationOptions'])
+// ── Generation options (public, no auth) ────────────────────────────────────
+router.get('/readings/options', [ReadingsController, 'options'])
 
-// Rutas de perfil de usuario
+// ── User profile ────────────────────────────────────────────────────────────
 router
   .group(() => {
-    // Perfil del usuario autenticado
     router.get('/profile', [UserController, 'getProfile'])
-
-    // Datos de racha del usuario
-    // Query params: days (opcional, default 10, max 30)
     router.get('/streak', [UserController, 'getStreak'])
-
-    // Perfil completo con streak (combinado para optimizar requests)
     router.get('/me', [UserController, 'getMe'])
   })
   .prefix('/user')
   .use(middleware.auth({ guards: ['api'] }))
 
-// Rutas protegidas de lecturas
+// ── Readings (protected) ───────────────────────────────────────────────────
 router
   .group(() => {
-    // Generar nuevo texto de lectura
-    // Query params opcionales: category, size, timePeriod, seed
-    router.post('/generate', [IasController, 'generateText'])
+    // Generate a new reading (body JSON: category, size, difficulty, timePeriod, seed)
+    router.post('/', [ReadingsController, 'store'])
 
-    // Obtener lecturas pendientes del usuario
-    router.get('/pending', [IasController, 'getPendingReadings'])
+    // List pending readings
+    router.get('/pending', [ReadingsController, 'pending'])
 
-    // Obtener lecturas completadas del usuario
-    router.get('/completed', [IasController, 'getCompletedReadings'])
+    // List completed readings
+    router.get('/completed', [ReadingsController, 'completed'])
 
-    // Obtener una lectura específica
-    router.get('/:id', [IasController, 'getReading'])
+    // Get a single reading
+    router.get('/:id', [ReadingsController, 'show'])
 
-    // Eliminar una lectura pendiente (soft delete)
-    router.delete('/:id', [IasController, 'deleteReading'])
+    // Soft-delete a pending reading → 204
+    router.delete('/:id', [ReadingsController, 'destroy'])
 
-    // Enviar respuesta de comprensión para evaluación
-    router.post('/:id/evaluate', [IasController, 'responseText'])
+    // Submit comprehension response for evaluation
+    router.post('/:id/evaluate', [ReadingsController, 'evaluate'])
 
-    // Explicar selección de texto en contexto
-    router.post('/:id/explain', [IasController, 'explainSelection'])
+    // Explain a text selection in context
+    router.post('/:id/explanations', [ExplanationsController, 'store'])
   })
   .prefix('/readings')
   .use(middleware.auth({ guards: ['api'] }))
 
-// Mantener rutas legacy para compatibilidad (deprecated)
+// ── Test / debug endpoints ──────────────────────────────────────────────────
+// These are NOT used by the production app. Grouped under /test for clarity.
 router
-  .get('/generate-text', [IasController, 'generateText'])
-  .use(middleware.auth({ guards: ['api'] }))
-router
-  .post('/response-text/:id', [IasController, 'responseText'])
+  .group(() => {
+    router.post('/mensaje', [IasController, 'mensaje'])
+
+    // Legacy aliases that point to the real controllers (kept for manual testing)
+    router.get('/generate-text', [ReadingsController, 'store'])
+    router.post('/response-text/:id', [ReadingsController, 'evaluate'])
+  })
+  .prefix('/test')
   .use(middleware.auth({ guards: ['api'] }))
