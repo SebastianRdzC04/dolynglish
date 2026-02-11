@@ -51,17 +51,18 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "36df440f-be01-4878-b0ae-95b7a55d4a2a"
-      }
-    },
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1b3a15f5-dcc3-4ef5-b88d-62d0b5befe91"
+      }
+    },
+    "owner": "sebasdevrc",
     "updates": {
-      "url": "https://u.expo.dev/36df440f-be01-4878-b0ae-95b7a55d4a2a"
+      "url": "https://u.expo.dev/1b3a15f5-dcc3-4ef5-b88d-62d0b5befe91"
     }
   }
 }
