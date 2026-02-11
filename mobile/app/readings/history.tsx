@@ -6,7 +6,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { FlatList, StyleSheet, RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 // Features
 import { ReadingCard, useReadings, getCategoryLabel, getEstimatedTime } from "@/src/features/readings";
@@ -14,6 +14,8 @@ import type { Reading } from "@/src/features/readings";
 
 // Shared
 import { Loading, EmptyState } from "@/src/shared/components/ui";
+
+const ItemSeparator = () => <View style={styles.separator} />;
 
 export default function ReadingsHistoryScreen() {
   const router = useRouter();
@@ -31,9 +33,12 @@ export default function ReadingsHistoryScreen() {
     setRefreshing(false);
   }, [refetchCompleted]);
 
-  const handleReadingPress = (id: number) => {
-    router.push(`/reading/${id}`);
-  };
+  const handleReadingPress = useCallback(
+    (id: number) => {
+      router.push(`/reading/${id}`);
+    },
+    [router]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: Reading }) => (
@@ -46,7 +51,7 @@ export default function ReadingsHistoryScreen() {
         onPress={() => handleReadingPress(item.id)}
       />
     ),
-    []
+    [handleReadingPress]
   );
 
   const keyExtractor = useCallback((item: Reading) => item.id.toString(), []);
@@ -65,7 +70,7 @@ export default function ReadingsHistoryScreen() {
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={styles.listContent}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ItemSeparatorComponent={ItemSeparator}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

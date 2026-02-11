@@ -5,7 +5,7 @@
 
 import { ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 // Features
 import {

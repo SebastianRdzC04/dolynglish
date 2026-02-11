@@ -1,9 +1,10 @@
 /**
- * Modal para mostrar explicación de texto seleccionado
- * Bottom sheet con la explicación generada por IA
+ * Modal para mostrar explicacion de texto seleccionado
+ * Bottom sheet con la explicacion generada por IA
+ * Usa Reanimated + Gesture Handler para animaciones GPU-accelerated
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,16 +12,27 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Animated,
   Dimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+  Easing,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import { Button, Loading, ErrorMessage, Divider } from '@/src/shared/components/ui';
 import { ExplanationResponse } from '../types';
 import { difficultyConfig } from '../utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DISMISS_THRESHOLD = 120;
 
 interface ExplanationModalProps {
   visible: boolean;
@@ -43,46 +55,66 @@ export function ExplanationModal({
   onClose,
   onRetry,
 }: ExplanationModalProps) {
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const slideY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  // Shared values para animaciones GPU-accelerated
+  const backdropProgress = useSharedValue(0);
+  const sheetProgress = useSharedValue(0);
+  const dragY = useSharedValue(0);
 
+  // Animar entrada cuando cambia visible
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideY, {
-          toValue: 0,
-          damping: 20,
-          stiffness: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      backdropOpacity.setValue(0);
-      slideY.setValue(SCREEN_HEIGHT);
+      // Resetear posiciones antes de animar entrada
+      dragY.set(0);
+      sheetProgress.set(0);
+      backdropProgress.set(withTiming(1, { duration: 250 }));
+      sheetProgress.set(withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) }));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, [visible, backdropOpacity, slideY]);
+  }, [visible, backdropProgress, sheetProgress, dragY]);
 
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideY, {
-        toValue: SCREEN_HEIGHT,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
+  // Animar cierre
+  const handleClose = useCallback(() => {
+    backdropProgress.set(withTiming(0, { duration: 200 }));
+    dragY.set(withTiming(SCREEN_HEIGHT, { duration: 250, easing: Easing.in(Easing.cubic) }, () => {
+      runOnJS(onClose)();
+    }));
+  }, [backdropProgress, dragY, onClose]);
+
+  // Gesto de swipe-down para cerrar
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      const clampedY = Math.max(0, event.translationY);
+      dragY.set(clampedY);
+    })
+    .onEnd((event) => {
+      if (event.translationY > DISMISS_THRESHOLD) {
+        // Supero el umbral: continuar en la misma direccion para cerrar
+        backdropProgress.set(withTiming(0, { duration: 200 }));
+        dragY.set(withTiming(SCREEN_HEIGHT, { duration: 250, easing: Easing.in(Easing.cubic) }, () => {
+          runOnJS(onClose)();
+        }));
+      } else {
+        dragY.set(withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }));
+      }
     });
-  };
+
+  // Estilos animados - solo transform y opacity (GPU-accelerated)
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropProgress.get(),
+  }));
+
+  const sheetStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      sheetProgress.get(),
+      [0, 1],
+      [SCREEN_HEIGHT, 0],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [{ translateY: translateY + dragY.get() }],
+    };
+  });
 
   if (!visible) return null;
 
@@ -95,170 +127,167 @@ export function ExplanationModal({
     >
       <View style={styles.overlay}>
         {/* Backdrop */}
-        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
 
-        {/* Bottom Sheet */}
-        <Animated.View
-          style={[
-            styles.bottomSheet,
-            { transform: [{ translateY: slideY }] }
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.handleBar} />
-            <View style={styles.headerContent}>
-              <Ionicons
-                name="language-outline"
-                size={24}
-                color={Colors.accent.primary}
-              />
-              <Text style={styles.title}>Explanation</Text>
-              {fromCache && explanation && (
-                <View style={styles.cacheBadge}>
-                  <Ionicons name="flash" size={12} color={Colors.accent.primary} />
-                  <Text style={styles.cacheBadgeText}>Instant</Text>
-                </View>
-              )}
-              <Pressable
-                style={styles.closeButton}
-                onPress={handleClose}
-                hitSlop={8}
-              >
-                <Ionicons name="close" size={24} color={Colors.text.secondary} />
-              </Pressable>
+        {/* Bottom Sheet con swipe-down */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.bottomSheet, sheetStyle]}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.handleBar} />
+              <View style={styles.headerContent}>
+                <Ionicons
+                  name="language-outline"
+                  size={24}
+                  color={Colors.accent.primary}
+                />
+                <Text style={styles.title}>Explicación</Text>
+                {fromCache && explanation ? (
+                  <View style={styles.cacheBadge}>
+                    <Ionicons name="flash" size={12} color={Colors.accent.primary} />
+                    <Text style={styles.cacheBadgeText}>Instantáneo</Text>
+                  </View>
+                ) : null}
+                <Pressable
+                  style={styles.closeButton}
+                  onPress={handleClose}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={24} color={Colors.text.secondary} />
+                </Pressable>
+              </View>
             </View>
-          </View>
 
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Loading State */}
-            {isLoading && (
-              <View style={styles.stateContainer}>
-                <Loading message="Getting explanation..." />
-              </View>
-            )}
+            {/* Content */}
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Loading State */}
+              {isLoading ? (
+                <View style={styles.stateContainer}>
+                  <Loading message="Obteniendo explicación..." />
+                </View>
+              ) : null}
 
-            {/* Error State */}
-            {error && !isLoading && (
-              <View style={styles.stateContainer}>
-                <ErrorMessage message={error} />
-                {rateLimitInfo && (
-                  <View style={styles.rateLimitInfo}>
-                    <Text style={styles.rateLimitText}>
-                      Used today: {rateLimitInfo.usedToday}/{rateLimitInfo.limit}
+              {/* Error State */}
+              {error && !isLoading ? (
+                <View style={styles.stateContainer}>
+                  <ErrorMessage message={error} />
+                  {rateLimitInfo ? (
+                    <View style={styles.rateLimitInfo}>
+                      <Text style={styles.rateLimitText}>
+                        Usadas hoy: {rateLimitInfo.usedToday}/{rateLimitInfo.limit}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {onRetry && !rateLimitInfo ? (
+                    <Button variant="secondary" onPress={onRetry}>
+                      Reintentar
+                    </Button>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {/* Explanation Content */}
+              {explanation && !isLoading && !error ? (
+                <View style={styles.explanationContent}>
+                  {/* Selected Text */}
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Texto seleccionado:</Text>
+                    <View style={styles.selectionBox}>
+                      <Text style={styles.selectionText}>
+                        "{explanation.selection}"
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Divider spacing={12} />
+
+                  {/* Main Explanation */}
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Ionicons
+                        name="bulb-outline"
+                        size={20}
+                        color={Colors.accent.primary}
+                      />
+                      <Text style={styles.sectionLabel}>Explicación simple:</Text>
+                    </View>
+                    <Text style={styles.explanationText}>
+                      {explanation.explanation}
                     </Text>
                   </View>
-                )}
-                {onRetry && !rateLimitInfo && (
-                  <Button variant="secondary" onPress={onRetry}>
-                    Try Again
-                  </Button>
-                )}
-              </View>
-            )}
 
-            {/* Explanation Content */}
-            {explanation && !isLoading && !error && (
-              <View style={styles.explanationContent}>
-                {/* Selected Text */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Selected Text:</Text>
-                  <View style={styles.selectionBox}>
-                    <Text style={styles.selectionText}>
-                      "{explanation.selection}"
-                    </Text>
-                  </View>
-                </View>
-
-                <Divider spacing={12} />
-
-                {/* Main Explanation */}
-                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Ionicons
-                      name="bulb-outline"
-                      size={20}
-                      color={Colors.accent.primary}
-                    />
-                    <Text style={styles.sectionLabel}>Simple Explanation:</Text>
-                  </View>
-                  <Text style={styles.explanationText}>
-                    {explanation.explanation}
-                  </Text>
-                </View>
-
-                {/* Simplified Terms */}
-                {explanation.simplifiedTerms.length > 0 && (
-                  <>
-                    <Divider spacing={12} />
-                    <View style={styles.section}>
-                      <View style={styles.sectionHeader}>
-                        <Ionicons
-                          name="list-outline"
-                          size={20}
-                          color={Colors.accent.primary}
-                        />
-                        <Text style={styles.sectionLabel}>Key Terms:</Text>
-                      </View>
-                      {explanation.simplifiedTerms.map((term, index) => (
-                        <View key={index} style={styles.termItem}>
-                          <Text style={styles.termWord}>• {term.term}</Text>
-                          <Text style={styles.termSimple}>   = {term.simple}</Text>
+                  {/* Simplified Terms */}
+                  {explanation.simplifiedTerms.length > 0 ? (
+                    <>
+                      <Divider spacing={12} />
+                      <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                          <Ionicons
+                            name="list-outline"
+                            size={20}
+                            color={Colors.accent.primary}
+                          />
+                          <Text style={styles.sectionLabel}>Términos clave:</Text>
                         </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-
-                {/* Example in Context */}
-                {explanation.exampleInContext && (
-                  <>
-                    <Divider spacing={12} />
-                    <View style={styles.section}>
-                      <View style={styles.sectionHeader}>
-                        <Ionicons
-                          name="chatbox-ellipses-outline"
-                          size={20}
-                          color={Colors.accent.primary}
-                        />
-                        <Text style={styles.sectionLabel}>Example:</Text>
+                        {explanation.simplifiedTerms.map((term, index) => (
+                          <View key={index} style={styles.termItem}>
+                            <Text style={styles.termWord}>• {term.term}</Text>
+                            <Text style={styles.termSimple}>   = {term.simple}</Text>
+                          </View>
+                        ))}
                       </View>
-                      <View style={styles.exampleBox}>
-                        <Text style={styles.exampleText}>
-                          {explanation.exampleInContext}
-                        </Text>
-                      </View>
-                    </View>
-                  </>
-                )}
+                    </>
+                  ) : null}
 
-                {/* Difficulty Badge */}
-                <View style={styles.footer}>
-                  <View style={styles.difficultyBadge}>
-                    <Text style={styles.difficultyLabel}>
-                      Level: {difficultyConfig[explanation.difficultyLevel].label}
-                    </Text>
+                  {/* Example in Context */}
+                  {explanation.exampleInContext ? (
+                    <>
+                      <Divider spacing={12} />
+                      <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                          <Ionicons
+                            name="chatbox-ellipses-outline"
+                            size={20}
+                            color={Colors.accent.primary}
+                          />
+                          <Text style={styles.sectionLabel}>Ejemplo:</Text>
+                        </View>
+                        <View style={styles.exampleBox}>
+                          <Text style={styles.exampleText}>
+                            {explanation.exampleInContext}
+                          </Text>
+                        </View>
+                      </View>
+                    </>
+                  ) : null}
+
+                  {/* Difficulty Badge */}
+                  <View style={styles.difficultyFooter}>
+                    <View style={styles.difficultyBadge}>
+                      <Text style={styles.difficultyLabel}>
+                        Nivel: {difficultyConfig[explanation.difficultyLevel].label}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
-          </ScrollView>
+              ) : null}
+            </ScrollView>
 
-          {/* Action Button */}
-          {explanation && !isLoading && (
-            <View style={styles.actionFooter}>
-              <Button onPress={handleClose}>
-                Got it!
-              </Button>
-            </View>
-          )}
-        </Animated.View>
+            {/* Action Button */}
+            {explanation && !isLoading ? (
+              <View style={styles.actionFooter}>
+                <Button onPress={handleClose}>
+                  ¡Entendido!
+                </Button>
+              </View>
+            ) : null}
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );
@@ -277,6 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderCurve: 'continuous',
     maxHeight: '85%',
     paddingBottom: 34,
   },
@@ -408,7 +438,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 22,
   },
-  footer: {
+  difficultyFooter: {
     marginTop: 16,
     alignItems: 'flex-end',
   },

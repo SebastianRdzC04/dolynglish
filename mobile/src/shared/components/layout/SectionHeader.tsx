@@ -5,7 +5,7 @@
 
 import React, { ReactNode } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 
 interface SectionHeaderProps {
   /** Título de la sección */

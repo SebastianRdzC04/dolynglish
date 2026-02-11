@@ -11,7 +11,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from "react-native";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 interface ScreenProps {
   /** Contenido de la pantalla */

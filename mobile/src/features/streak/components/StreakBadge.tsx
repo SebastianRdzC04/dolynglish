@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Loading, Card, Divider } from '@/src/shared/components/ui';
 import { WeeklyProgress } from './WeeklyProgress';

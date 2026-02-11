@@ -26,7 +26,7 @@ interface AuthContextType {
   /** Registra un nuevo usuario y lo autentica */
   signUp: (credentials: RegisterCredentials) => Promise<void>;
   /** Cierra la sesión */
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -78,8 +78,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
   // Iniciar sesión
   const signIn = useCallback(async (credentials: LoginCredentials) => {
     const response = await authService.login(credentials);
-    setSession(response.data.token.token);
-    setUserJson(JSON.stringify(response.data.user));
+    // Persist token and user BEFORE updating React state
+    // This ensures secureStorage has the token when apiClient reads it
+    await setSession(response.data.token.token);
+    await setUserJson(JSON.stringify(response.data.user));
   }, [setSession, setUserJson]);
 
   // Registrar y autenticar
@@ -93,9 +95,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, [signIn]);
 
   // Cerrar sesión
-  const signOut = useCallback(() => {
-    setSession(null);
-    setUserJson(null);
+  const signOut = useCallback(async () => {
+    await setSession(null);
+    await setUserJson(null);
   }, [setSession, setUserJson]);
 
   const value = useMemo<AuthContextType>(

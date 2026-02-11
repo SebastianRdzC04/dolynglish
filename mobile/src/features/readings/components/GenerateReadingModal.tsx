@@ -1,9 +1,10 @@
 /**
- * Modal para configurar opciones de generación de lectura
- * Bottom sheet con selectores de categoría, dificultad y tamaño
+ * Modal para configurar opciones de generacion de lectura
+ * Bottom sheet con selectores de categoria, dificultad y tamano
+ * Usa Reanimated + Gesture Handler para animaciones GPU-accelerated
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +14,21 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
   Dimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+  Easing,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import { Button } from '@/src/shared/components/ui';
 import {
   TextCategory,
@@ -32,11 +43,12 @@ import {
 } from '../utils/reading.utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DISMISS_THRESHOLD = 120;
 
 interface GenerateReadingModalProps {
-  /** Si el modal está visible */
+  /** Si el modal esta visible */
   visible: boolean;
-  /** Si está generando la lectura */
+  /** Si esta generando la lectura */
   isGenerating: boolean;
   /** Callback para cerrar el modal */
   onClose: () => void;
@@ -70,7 +82,7 @@ function OptionChip<T>({
       <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
         {option.label}
       </Text>
-      {option.description && (
+      {option.description ? (
         <Text
           style={[
             styles.chipDescription,
@@ -79,7 +91,7 @@ function OptionChip<T>({
         >
           {option.description}
         </Text>
-      )}
+      ) : null}
     </Pressable>
   );
 }
@@ -120,7 +132,7 @@ function ChipSelector<T>({
 }
 
 /**
- * Modal principal de configuración
+ * Modal principal de configuracion
  */
 export function GenerateReadingModal({
   visible,
@@ -133,35 +145,24 @@ export function GenerateReadingModal({
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
   const [selectedSize, setSelectedSize] = useState<TextSize | null>(null);
 
-  // Animaciones separadas para backdrop y bottom sheet
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const bottomSheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  // Shared values para animaciones GPU-accelerated
+  const backdropProgress = useSharedValue(0);
+  const sheetProgress = useSharedValue(0);
+  const dragY = useSharedValue(0);
 
-  // Animar entrada/salida cuando cambia visible
+  // Animar entrada cuando cambia visible
   useEffect(() => {
     if (visible) {
-      // Animar entrada: backdrop fade in + sheet slide up
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.spring(bottomSheetTranslateY, {
-          toValue: 0,
-          damping: 20,
-          stiffness: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      // Resetear valores cuando se cierra
-      backdropOpacity.setValue(0);
-      bottomSheetTranslateY.setValue(SCREEN_HEIGHT);
+      // Resetear posiciones antes de animar entrada
+      dragY.set(0);
+      sheetProgress.set(0);
+      backdropProgress.set(withTiming(1, { duration: 250 }));
+      sheetProgress.set(withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) }));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, [visible, backdropOpacity, bottomSheetTranslateY]);
+  }, [visible, backdropProgress, sheetProgress, dragY]);
 
-  // Opciones de categoría
+  // Opciones de categoria
   const categoryOptions: ChipOption<TextCategory>[] = [
     { value: null, label: 'Aleatorio' },
     ...Object.entries(categoryLabels).map(([value, label]) => ({
@@ -179,7 +180,7 @@ export function GenerateReadingModal({
     })),
   ];
 
-  // Opciones de tamaño
+  // Opciones de tamano
   const sizeOptions: ChipOption<TextSize>[] = [
     { value: null, label: 'Aleatorio' },
     ...Object.entries(sizeConfig).map(([value, config]) => ({
@@ -189,7 +190,7 @@ export function GenerateReadingModal({
     })),
   ];
 
-  // Manejar generación
+  // Manejar generacion
   const handleGenerate = useCallback(() => {
     const options: GenerateReadingOptions = {};
 
@@ -200,28 +201,59 @@ export function GenerateReadingModal({
     onGenerate(options);
   }, [selectedCategory, selectedDifficulty, selectedSize, onGenerate]);
 
+  // Resetear selecciones y llamar onClose
+  const resetAndClose = useCallback(() => {
+    setSelectedCategory(null);
+    setSelectedDifficulty(null);
+    setSelectedSize(null);
+    onClose();
+  }, [onClose]);
+
   // Animar cierre y resetear selecciones
   const handleClose = useCallback(() => {
-    // Animar salida: backdrop fade out + sheet slide down
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bottomSheetTranslateY, {
-        toValue: SCREEN_HEIGHT,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Después de la animación, cerrar el modal y resetear
-      setSelectedCategory(null);
-      setSelectedDifficulty(null);
-      setSelectedSize(null);
-      onClose();
+    backdropProgress.set(withTiming(0, { duration: 200 }));
+    dragY.set(withTiming(SCREEN_HEIGHT, { duration: 250, easing: Easing.in(Easing.cubic) }, () => {
+      runOnJS(resetAndClose)();
+    }));
+  }, [backdropProgress, dragY, resetAndClose]);
+
+  // Gesto de swipe-down para cerrar
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Solo permitir arrastrar hacia abajo
+      const clampedY = Math.max(0, event.translationY);
+      dragY.set(clampedY);
+    })
+    .onEnd((event) => {
+      if (event.translationY > DISMISS_THRESHOLD) {
+        // Supero el umbral: continuar en la misma direccion para cerrar
+        backdropProgress.set(withTiming(0, { duration: 200 }));
+        dragY.set(withTiming(SCREEN_HEIGHT, { duration: 250, easing: Easing.in(Easing.cubic) }, () => {
+          runOnJS(resetAndClose)();
+        }));
+      } else {
+        // No supero el umbral: volver a la posicion original
+        dragY.set(withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }));
+      }
     });
-  }, [onClose, backdropOpacity, bottomSheetTranslateY]);
+
+  // Estilos animados - solo transform y opacity (GPU-accelerated)
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropProgress.get(),
+  }));
+
+  const sheetStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      sheetProgress.get(),
+      [0, 1],
+      [SCREEN_HEIGHT, 0],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [{ translateY: translateY + dragY.get() }],
+    };
+  });
 
   return (
     <Modal
@@ -234,77 +266,74 @@ export function GenerateReadingModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalOverlay}
       >
-        {/* Backdrop con animación de fade */}
-        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        {/* Backdrop con animacion de fade */}
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
 
-        {/* Bottom Sheet con animación de slide */}
-        <Animated.View 
-          style={[
-            styles.bottomSheet,
-            { transform: [{ translateY: bottomSheetTranslateY }] }
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.handleBar} />
-            <View style={styles.headerContent}>
-              <Text style={styles.title}>Configurar Lectura</Text>
-              <Pressable
-                style={styles.closeButton}
-                onPress={handleClose}
-                hitSlop={8}
-              >
-                <Ionicons name="close" size={24} color={Colors.text.secondary} />
-              </Pressable>
+        {/* Bottom Sheet con animacion de slide + swipe-down */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.bottomSheet, sheetStyle]}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.handleBar} />
+              <View style={styles.headerContent}>
+                <Text style={styles.title}>Configurar Lectura</Text>
+                <Pressable
+                  style={styles.closeButton}
+                  onPress={handleClose}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={24} color={Colors.text.secondary} />
+                </Pressable>
+              </View>
+              <Text style={styles.subtitle}>
+                Personaliza tu lectura o deja en aleatorio
+              </Text>
             </View>
-            <Text style={styles.subtitle}>
-              Personaliza tu lectura o deja en aleatorio
-            </Text>
-          </View>
 
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Selector de Categoría */}
-            <ChipSelector
-              label="Categoría"
-              options={categoryOptions}
-              selectedValue={selectedCategory}
-              onSelect={setSelectedCategory}
-            />
-
-            {/* Selector de Dificultad */}
-            <ChipSelector
-              label="Dificultad"
-              options={difficultyOptions}
-              selectedValue={selectedDifficulty}
-              onSelect={setSelectedDifficulty}
-            />
-
-            {/* Selector de Tamaño */}
-            <ChipSelector
-              label="Tamaño"
-              options={sizeOptions}
-              selectedValue={selectedSize}
-              onSelect={setSelectedSize}
-            />
-          </ScrollView>
-
-          {/* Footer con botón de generar */}
-          <View style={styles.footer}>
-            <Button
-              onPress={handleGenerate}
-              loading={isGenerating}
-              icon="sparkles"
+            {/* Content */}
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
             >
-              {isGenerating ? 'Generando...' : 'Generar Lectura'}
-            </Button>
-          </View>
-        </Animated.View>
+              {/* Selector de Categoria */}
+              <ChipSelector
+                label="Categoria"
+                options={categoryOptions}
+                selectedValue={selectedCategory}
+                onSelect={setSelectedCategory}
+              />
+
+              {/* Selector de Dificultad */}
+              <ChipSelector
+                label="Dificultad"
+                options={difficultyOptions}
+                selectedValue={selectedDifficulty}
+                onSelect={setSelectedDifficulty}
+              />
+
+              {/* Selector de Tamano */}
+              <ChipSelector
+                label="Tamano"
+                options={sizeOptions}
+                selectedValue={selectedSize}
+                onSelect={setSelectedSize}
+              />
+            </ScrollView>
+
+            {/* Footer con boton de generar */}
+            <View style={styles.footer}>
+              <Button
+                onPress={handleGenerate}
+                loading={isGenerating}
+                icon="sparkles"
+              >
+                {isGenerating ? 'Generando...' : 'Generar Lectura'}
+              </Button>
+            </View>
+          </Animated.View>
+        </GestureDetector>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -323,6 +352,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderCurve: 'continuous',
     maxHeight: '80%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },

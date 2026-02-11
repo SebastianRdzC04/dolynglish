@@ -1,26 +1,27 @@
 /**
  * Componente SwipeableReadingCard
  * Card de lectura con swipe-to-delete estilo Spotify
+ * Memoizada para evitar re-renders innecesarios en listas
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, memo } from 'react';
 import { View, StyleSheet, Alert, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import { Reading } from '../types';
 import { getCategoryLabel, getEstimatedTime } from '../utils';
 import { ReadingCard } from './ReadingCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DELETE_THRESHOLD = SCREEN_WIDTH * 0.35; // 35% del ancho para activar delete
+const DELETE_THRESHOLD = SCREEN_WIDTH * 0.35;
 
 interface SwipeableReadingCardProps {
   /** Datos de la lectura */
@@ -31,7 +32,7 @@ interface SwipeableReadingCardProps {
   onDelete: () => Promise<boolean>;
 }
 
-export function SwipeableReadingCard({
+export const SwipeableReadingCard = memo(function SwipeableReadingCard({
   reading,
   onPress,
   onDelete,
@@ -42,7 +43,7 @@ export function SwipeableReadingCard({
   const cardOpacity = useSharedValue(1);
   const isDeleting = useSharedValue(false);
 
-  // Confirmar eliminación
+  // Confirmar eliminacion
   const confirmDelete = useCallback(() => {
     Alert.alert(
       '¿Eliminar lectura?',
@@ -52,20 +53,17 @@ export function SwipeableReadingCard({
           text: 'Cancelar',
           style: 'cancel',
           onPress: () => {
-            // Volver a posición original
-            translateX.value = withSpring(0, { damping: 20, stiffness: 150 });
+            translateX.set(withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }));
           },
         },
         {
           text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            isDeleting.value = true;
-            // Animar salida: colapsar altura y fade out
-            cardOpacity.value = withTiming(0, { duration: 200 });
-            cardHeight.value = withTiming(0, { duration: 300 });
-            
-            // Eliminar después de la animación
+            isDeleting.set(true);
+            cardOpacity.set(withTiming(0, { duration: 200 }));
+            cardHeight.set(withTiming(0, { duration: 300 }));
+
             setTimeout(async () => {
               await onDelete();
             }, 300);
@@ -81,43 +79,40 @@ export function SwipeableReadingCard({
     .activeOffsetX([-10, 10])
     .failOffsetY([-5, 5])
     .onUpdate((event) => {
-      // Solo permitir deslizar hacia la izquierda
-      if (event.translationX < 0 && !isDeleting.value) {
-        translateX.value = event.translationX;
+      if (event.translationX < 0 && !isDeleting.get()) {
+        translateX.set(event.translationX);
       }
     })
     .onEnd((event) => {
-      if (isDeleting.value) return;
+      if (isDeleting.get()) return;
 
-      // Si pasó el threshold, confirmar eliminación
       if (event.translationX < -DELETE_THRESHOLD) {
-        translateX.value = withSpring(-DELETE_THRESHOLD - 20, { damping: 20 });
+        translateX.set(withTiming(-DELETE_THRESHOLD - 20, { duration: 200, easing: Easing.out(Easing.cubic) }));
         runOnJS(confirmDelete)();
       } else {
-        // Volver a posición original
-        translateX.value = withSpring(0, { damping: 20, stiffness: 150 });
+        translateX.set(withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }));
       }
     });
 
   // Estilo animado del contenedor
   const containerAnimatedStyle = useAnimatedStyle(() => {
     return {
-      height: cardHeight.value !== null ? cardHeight.value : undefined,
-      opacity: cardOpacity.value,
-      overflow: 'hidden',
+      height: cardHeight.get() !== null ? cardHeight.get()! : undefined,
+      opacity: cardOpacity.get(),
+      overflow: 'hidden' as const,
     };
   });
 
   // Estilo animado de la card
   const cardAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateX: translateX.value }],
+      transform: [{ translateX: translateX.get() }],
     };
   });
 
-  // Estilo animado del fondo de delete (opacidad basada en el swipe)
+  // Estilo animado del fondo de delete
   const deleteBackgroundStyle = useAnimatedStyle(() => {
-    const progress = Math.min(Math.abs(translateX.value) / DELETE_THRESHOLD, 1);
+    const progress = Math.min(Math.abs(translateX.get()) / DELETE_THRESHOLD, 1);
     return {
       opacity: progress,
     };
@@ -147,16 +142,18 @@ export function SwipeableReadingCard({
       </GestureDetector>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
   },
   deleteBackground: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: Colors.status.error,
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'flex-end',
     paddingRight: 24,
@@ -170,6 +167,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardWrapper: {
-    backgroundColor: Colors.background.primary,
   },
 });

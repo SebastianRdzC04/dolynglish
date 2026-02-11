@@ -8,7 +8,7 @@ import { useState, useCallback } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 // Features
 import {

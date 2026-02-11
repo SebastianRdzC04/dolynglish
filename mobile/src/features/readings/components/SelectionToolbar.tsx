@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 
 interface SelectionToolbarProps {
   /** Si la toolbar es visible */
@@ -40,20 +40,17 @@ export function SelectionToolbar({
 
   useEffect(() => {
     if (visible && selectedText.length > 0) {
-      translateY.value = withTiming(0, {
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-      });
-      opacity.value = withTiming(1, { duration: 200 });
+      translateY.set(withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) }));
+      opacity.set(withTiming(1, { duration: 200 }));
     } else {
-      translateY.value = withTiming(100, { duration: 150 });
-      opacity.value = withTiming(0, { duration: 150 });
+      translateY.set(withTiming(100, { duration: 150 }));
+      opacity.set(withTiming(0, { duration: 150 }));
     }
   }, [visible, selectedText, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
+    transform: [{ translateY: translateY.get() }],
+    opacity: opacity.get(),
   }));
 
   const handleExplain = () => {
@@ -88,7 +85,7 @@ export function SelectionToolbar({
           &quot;{previewText}&quot;
         </Text>
         {isTooLong && (
-          <Text style={styles.warningText}>Too long</Text>
+          <Text style={styles.warningText}>Muy largo</Text>
         )}
       </View>
 
@@ -103,7 +100,7 @@ export function SelectionToolbar({
           onPress={handleCopy}
         >
           <Ionicons name="copy-outline" size={18} color={Colors.text.primary} />
-          <Text style={styles.actionText}>Copy</Text>
+          <Text style={styles.actionText}>Copiar</Text>
         </Pressable>
 
         <View style={styles.divider} />
@@ -125,7 +122,7 @@ export function SelectionToolbar({
                 size={18}
                 color={Colors.accent.primary}
               />
-              <Text style={styles.explainText}>Loading...</Text>
+              <Text style={styles.explainText}>Cargando...</Text>
             </>
           ) : (
             <>
@@ -140,7 +137,7 @@ export function SelectionToolbar({
                   isTooLong && styles.textDisabled,
                 ]}
               >
-                Explain
+                Explicar
               </Text>
             </>
           )}

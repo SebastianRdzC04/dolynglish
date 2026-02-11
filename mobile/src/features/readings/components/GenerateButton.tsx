@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Button } from '@/src/shared/components/ui';
 

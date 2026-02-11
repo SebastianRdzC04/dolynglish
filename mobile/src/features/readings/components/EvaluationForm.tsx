@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Button, Input, ErrorMessage, Card } from '@/src/shared/components/ui';
 
@@ -58,7 +58,7 @@ export function EvaluationForm({ isSubmitting, error, onSubmit }: EvaluationForm
       />
 
       {/* Error */}
-      {error && <ErrorMessage message={error} />}
+      {error ? <ErrorMessage message={error} /> : null}
 
       {/* Botón de enviar */}
       <Button

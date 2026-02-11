@@ -12,7 +12,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 
 interface InputProps extends TextInputProps {
   /** Label del campo */
@@ -43,7 +43,7 @@ export function Input({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         style={[
           styles.input,
@@ -58,8 +58,8 @@ export function Input({
         textAlignVertical={multiline ? 'top' : 'center'}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
-      {helperText && !error && <Text style={styles.helperText}>{helperText}</Text>}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {helperText && !error ? <Text style={styles.helperText}>{helperText}</Text> : null}
     </View>
   );
 }

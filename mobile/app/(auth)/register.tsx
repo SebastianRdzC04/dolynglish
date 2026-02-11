@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 import { useSession } from "@/src/features/auth";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -151,9 +151,9 @@ export default function RegisterScreen() {
             />
           </View>
 
-          {password && confirmPassword && password !== confirmPassword && (
+          {password && confirmPassword && password !== confirmPassword ? (
             <Text style={styles.errorText}>Las contraseñas no coinciden</Text>
-          )}
+          ) : null}
 
           <Pressable
             style={({ pressed }) => [

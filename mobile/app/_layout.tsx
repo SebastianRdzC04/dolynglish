@@ -2,7 +2,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import * as SystemUI from "expo-system-ui";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 import { SessionProvider, useSession } from "@/src/features/auth";
 import { Loading } from "@/src/shared/components/ui";
 
@@ -51,7 +51,6 @@ function RootLayoutNav() {
       />
       <Stack.Screen name="reading" options={{ headerShown: false }} />
       <Stack.Screen name="readings" options={{ headerShown: false }} />
-      <Stack.Screen name="more" options={{ title: "More" }} />
     </Stack>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 import { useSession } from "@/src/features/auth";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -209,14 +209,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     transform: [{ scale: 0.98 }],
   },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: Colors.accent.primary,
-    fontSize: 14,
-  },
   loginButton: {
     backgroundColor: Colors.accent.strong,
     borderRadius: 12,
@@ -238,36 +230,6 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 16,
     fontWeight: "600",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border.light,
-  },
-  dividerText: {
-    color: Colors.text.secondary,
-    marginHorizontal: 16,
-    fontSize: 14,
-  },
-  socialContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-  },
-  socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.background.secondary,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border.light,
   },
   footer: {
     flexDirection: "row",

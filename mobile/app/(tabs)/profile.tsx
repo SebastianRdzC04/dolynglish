@@ -6,7 +6,7 @@
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { useEffect, useCallback, useState } from "react";
 import { useRouter } from "expo-router";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 // Features

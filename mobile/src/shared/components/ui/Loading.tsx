@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 
 interface LoadingProps {
   /** Mensaje a mostrar debajo del spinner */
@@ -30,7 +30,7 @@ export function Loading({
   return (
     <View style={[styles.container, fullScreen && styles.fullScreen, style]}>
       <ActivityIndicator size={size} color={color} />
-      {message && <Text style={styles.message}>{message}</Text>}
+      {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
   );
 }

@@ -10,7 +10,7 @@ import { secureStorage } from '@/src/core/storage';
  * Tipo de retorno del hook
  * [isLoading, value], setValue
  */
-type UseStorageStateReturn<T> = [[boolean, T | null], (value: T | null) => void];
+type UseStorageStateReturn<T> = [[boolean, T | null], (value: T | null) => Promise<void>];
 
 /**
  * Reducer para manejar estado async
@@ -46,14 +46,16 @@ export function useStorageState(key: string): UseStorageStateReturn<string> {
   }, [key]);
 
   // Función para actualizar valor
+  // Persiste en storage ANTES de actualizar React state para evitar race conditions
+  // (e.g. apiClient.getAuthToken() leyendo storage antes de que el token se persista)
   const setValue = useCallback(
-    (value: string | null) => {
-      setState(value);
+    async (value: string | null) => {
       if (value === null) {
-        secureStorage.deleteItem(key);
+        await secureStorage.deleteItem(key);
       } else {
-        secureStorage.setItem(key, value);
+        await secureStorage.setItem(key, value);
       }
+      setState(value);
     },
     [key]
   );

@@ -1,6 +1,7 @@
 /**
  * Componente Button reutilizable
- * Soporta múltiples variantes y estados
+ * Soporta multiples variantes y estados
+ * Usa Reanimated para animaciones de press GPU-accelerated
  */
 
 import React from 'react';
@@ -13,24 +14,31 @@ import {
   TextStyle,
   PressableProps,
 } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  Easing,
+} from 'react-native-reanimated';
+import { Colors } from '@/src/core/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
-  /** Texto del botón */
+  /** Texto del boton */
   children: string;
   /** Variante visual */
   variant?: ButtonVariant;
-  /** Tamaño del botón */
+  /** Tamano del boton */
   size?: ButtonSize;
   /** Mostrar estado de carga */
   loading?: boolean;
   /** Icono a mostrar (nombre de Ionicons) */
   icon?: keyof typeof Ionicons.glyphMap;
-  /** Posición del icono */
+  /** Posicion del icono */
   iconPosition?: 'left' | 'right';
   /** Ocupar todo el ancho disponible */
   fullWidth?: boolean;
@@ -121,6 +129,8 @@ export function Button({
   iconPosition = 'left',
   fullWidth = true,
   style,
+  onPressIn,
+  onPressOut,
   ...props
 }: ButtonProps) {
   const variantStyle = variantStyles[variant];
@@ -129,33 +139,58 @@ export function Button({
 
   const iconColor = variantStyle.text.color as string;
 
+  // Estado de press (0 = no presionado, 1 = presionado)
+  const pressed = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: interpolate(pressed.get(), [0, 1], [1, 0.96]) },
+    ],
+    opacity: interpolate(pressed.get(), [0, 1], [1, 0.85]),
+  }));
+
+  const handlePressIn = (e: any) => {
+    pressed.set(withTiming(1, { duration: 120, easing: Easing.out(Easing.cubic) }));
+    onPressIn?.(e);
+  };
+
+  const handlePressOut = (e: any) => {
+    pressed.set(withTiming(0, { duration: 150, easing: Easing.out(Easing.cubic) }));
+    onPressOut?.(e);
+  };
+
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.container,
-        variantStyle.container,
-        sizeStyle.container,
-        fullWidth && styles.fullWidth,
-        pressed && styles.pressed,
-        isDisabled && styles.disabled,
-        style,
-      ]}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={isDisabled}
       {...props}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={iconColor} />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && (
-            <Ionicons name={icon} size={sizeStyle.icon} color={iconColor} />
-          )}
-          <Text style={[styles.text, variantStyle.text, sizeStyle.text]}>{children}</Text>
-          {icon && iconPosition === 'right' && (
-            <Ionicons name={icon} size={sizeStyle.icon} color={iconColor} />
-          )}
-        </>
-      )}
+      <Animated.View
+        style={[
+          styles.container,
+          variantStyle.container,
+          sizeStyle.container,
+          fullWidth && styles.fullWidth,
+          isDisabled && styles.disabled,
+          style,
+          animatedStyle,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={iconColor} />
+        ) : (
+          <>
+            {icon && iconPosition === 'left' ? (
+              <Ionicons name={icon} size={sizeStyle.icon} color={iconColor} />
+            ) : null}
+            <Text style={[styles.text, variantStyle.text, sizeStyle.text]}>{children}</Text>
+            {icon && iconPosition === 'right' ? (
+              <Ionicons name={icon} size={sizeStyle.icon} color={iconColor} />
+            ) : null}
+          </>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -172,10 +207,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
   },
   disabled: {
     opacity: 0.6,

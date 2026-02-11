@@ -26,8 +26,8 @@ CREATE TABLE auth_access_tokens (
   deleted_at TIMESTAMP
 );
 
--- Tabla: textos
-CREATE TABLE textos (
+-- Tabla: readings
+CREATE TABLE readings (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -44,10 +44,10 @@ CREATE TABLE textos (
     deleted_at TIMESTAMP
 );
 
--- Índices para textos
-CREATE INDEX idx_textos_user_id ON textos(user_id);
-CREATE INDEX idx_textos_status ON textos(status);
-CREATE INDEX idx_textos_user_status ON textos(user_id, status) WHERE deleted_at IS NULL;
+-- Índices para readings
+CREATE INDEX idx_readings_user_id ON readings(user_id);
+CREATE INDEX idx_readings_status ON readings(status);
+CREATE INDEX idx_readings_user_status ON readings(user_id, status) WHERE deleted_at IS NULL;
 
 -- Tabla: prompt_logs (para persistir logs de generación de prompts)
 CREATE TABLE prompt_logs (
@@ -57,7 +57,7 @@ CREATE TABLE prompt_logs (
     message TEXT NOT NULL,
     seed VARCHAR(255),
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    text_id INTEGER REFERENCES textos(id) ON DELETE SET NULL,
+    text_id INTEGER REFERENCES readings(id) ON DELETE SET NULL,
     params JSONB,
     system_prompt TEXT,
     user_prompt TEXT,

@@ -8,7 +8,7 @@ import { useCallback, useState, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 // Core
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 // Features
 import { useSession } from "@/src/features/auth";
@@ -142,7 +142,7 @@ export default function HomeScreen() {
         />
 
         {/* Estado de error */}
-        {error && <ErrorMessage message={error} />}
+        {error ? <ErrorMessage message={error} /> : null}
         {/* Botón para generar / mensaje de límite */}
         {pendingReadings.length > 0 || pendingInfo.canGenerateMore ? (
           <GenerateButton

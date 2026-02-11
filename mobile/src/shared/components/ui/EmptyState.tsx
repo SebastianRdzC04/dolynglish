@@ -5,7 +5,7 @@
 
 import React, { ReactNode } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface EmptyStateProps {
@@ -32,7 +32,7 @@ export function EmptyState({
     <View style={[styles.container, style]}>
       <Ionicons name={icon} size={48} color={Colors.gray.pepper} />
       <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {action && <View style={styles.actionContainer}>{action}</View>}
     </View>
   );

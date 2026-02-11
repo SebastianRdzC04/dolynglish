@@ -3,7 +3,7 @@
  */
 
 import { Stack } from "expo-router";
-import { Colors } from "@/constants/Colors";
+import { Colors } from "@/src/core/theme";
 
 export default function ReadingsLayout() {
   return (

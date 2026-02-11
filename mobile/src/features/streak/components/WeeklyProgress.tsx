@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/src/core/theme';
 import { WEEK_DAYS } from '@/src/core/config';
 import { ProgressDay } from './ProgressDay';
 
