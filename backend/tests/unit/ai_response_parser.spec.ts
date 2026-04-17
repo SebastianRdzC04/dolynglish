@@ -25,13 +25,16 @@ test.group('AiResponseParserService | parseGeneratedText', () => {
   })
 
   test('strips markdown code fences', ({ assert }) => {
-    const raw = '```json\n' + JSON.stringify({
-      title: 'Test',
-      description: 'Desc',
-      content: 'Content here',
-      category: 'history',
-      difficulty: 'medium',
-    }) + '\n```'
+    const raw =
+      '```json\n' +
+      JSON.stringify({
+        title: 'Test',
+        description: 'Desc',
+        content: 'Content here',
+        category: 'history',
+        difficulty: 'medium',
+      }) +
+      '\n```'
 
     const result = parser.parseGeneratedText(raw)
     assert.equal(result.title, 'Test')
@@ -96,7 +99,10 @@ test.group('AiResponseParserService | parseGeneratedText', () => {
       category: 'technology',
     })
 
-    assert.throws(() => parser.parseGeneratedText(raw), 'Failed to parse AI response for text generation')
+    assert.throws(
+      () => parser.parseGeneratedText(raw),
+      'Failed to parse AI response for text generation'
+    )
   })
 
   test('throws when required field content is missing', ({ assert }) => {
@@ -106,7 +112,10 @@ test.group('AiResponseParserService | parseGeneratedText', () => {
       category: 'technology',
     })
 
-    assert.throws(() => parser.parseGeneratedText(raw), 'Failed to parse AI response for text generation')
+    assert.throws(
+      () => parser.parseGeneratedText(raw),
+      'Failed to parse AI response for text generation'
+    )
   })
 
   test('throws on invalid JSON', ({ assert }) => {
@@ -122,7 +131,10 @@ test.group('AiResponseParserService | parseGeneratedText', () => {
       difficulty: 'easy',
     })
 
-    assert.throws(() => parser.parseGeneratedText(raw), 'Failed to parse AI response for text generation')
+    assert.throws(
+      () => parser.parseGeneratedText(raw),
+      'Failed to parse AI response for text generation'
+    )
   })
 })
 

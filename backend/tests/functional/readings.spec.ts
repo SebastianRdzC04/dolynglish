@@ -27,7 +27,10 @@ test.group('Readings | CRUD operations', (group) => {
     await db.from('readings').delete()
   })
 
-  test('GET /readings/options returns generation options without auth', async ({ client, assert }) => {
+  test('GET /readings/options returns generation options without auth', async ({
+    client,
+    assert,
+  }) => {
     const response = await client.get('/readings/options')
 
     response.assertStatus(200)
@@ -114,7 +117,10 @@ test.group('Readings | CRUD operations', (group) => {
     response.assertStatus(403)
   })
 
-  test('DELETE /readings/:id soft-deletes a pending reading with 204', async ({ client, assert }) => {
+  test('DELETE /readings/:id soft-deletes a pending reading with 204', async ({
+    client,
+    assert,
+  }) => {
     const reading = await Reading.create({
       userId: user.id,
       title: 'To Delete',
@@ -168,8 +174,9 @@ test.group('Readings | Validation', (group) => {
   })
 
   test('POST /readings/:id/evaluate rejects empty body', async ({ client }) => {
+    const user = await User.findByOrFail('email', 'validate@example.com')
     const reading = await Reading.create({
-      userId: (await User.findByOrFail('email', 'validate@example.com')).id,
+      userId: user.id,
       title: 'Eval Test',
       description: 'For evaluation',
       content: 'Content to evaluate.',
@@ -187,7 +194,9 @@ test.group('Readings | Validation', (group) => {
     response.assertStatus(422)
   })
 
-  test('POST /readings/:id/evaluate rejects when reading is already completed', async ({ client }) => {
+  test('POST /readings/:id/evaluate rejects when reading is already completed', async ({
+    client,
+  }) => {
     const user = await User.findByOrFail('email', 'validate@example.com')
     const reading = await Reading.create({
       userId: user.id,

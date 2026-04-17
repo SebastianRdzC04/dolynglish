@@ -3,27 +3,30 @@
  * Sincroniza estado de React con SecureStore/localStorage
  */
 
-import { useEffect, useCallback, useReducer } from 'react';
-import { secureStorage } from '@/src/core/storage';
+import { useEffect, useCallback, useReducer } from "react";
+import { secureStorage } from "@/src/core/storage";
 
 /**
  * Tipo de retorno del hook
  * [isLoading, value], setValue
  */
-type UseStorageStateReturn<T> = [[boolean, T | null], (value: T | null) => Promise<void>];
+type UseStorageStateReturn<T> = [
+  [boolean, T | null],
+  (value: T | null) => Promise<void>,
+];
 
 /**
  * Reducer para manejar estado async
  */
 function useAsyncState<T>(
-  initialValue: [boolean, T | null] = [true, null]
+  initialValue: [boolean, T | null] = [true, null],
 ): UseStorageStateReturn<T> {
   return useReducer(
     (
       state: [boolean, T | null],
-      action: T | null = null
+      action: T | null = null,
     ): [boolean, T | null] => [false, action],
-    initialValue
+    initialValue,
   ) as UseStorageStateReturn<T>;
 }
 
@@ -31,7 +34,7 @@ function useAsyncState<T>(
  * Hook para persistir estado en almacenamiento seguro
  * @param key - Clave de almacenamiento
  * @returns Tuple con [isLoading, value] y función setValue
- * 
+ *
  * @example
  * const [[isLoading, token], setToken] = useStorageState('session');
  */
@@ -57,7 +60,7 @@ export function useStorageState(key: string): UseStorageStateReturn<string> {
       }
       setState(value);
     },
-    [key]
+    [key],
   );
 
   return [state, setValue];

@@ -9,11 +9,7 @@ import PromptLogService from '#services/prompt_log.service'
 import StreakService from '#services/streak.service'
 import AiResponseParserService from '#services/ai_response_parser.service'
 import { generateTextValidator, evaluateReadingValidator } from '#validators/reading'
-import type {
-  ApiResponse,
-  PendingReadingsResponse,
-  ReadingDto,
-} from '../types/api_response.js'
+import type { ApiResponse, PendingReadingsResponse, ReadingDto } from '../types/api_response.js'
 import type { GenerationOptionsResponse } from '../types/prompt_generator.js'
 import type { StreakEvaluationData } from '../types/streak.js'
 
@@ -99,7 +95,12 @@ export default class ReadingsController {
         const aiReturnedDifficulty = generatedData.difficulty
         if (requestedDifficulty && aiReturnedDifficulty !== requestedDifficulty) {
           logger.warn(
-            { userId: user.id, requestedDifficulty, aiReturnedDifficulty, seed: generatedPrompt.seed },
+            {
+              userId: user.id,
+              requestedDifficulty,
+              aiReturnedDifficulty,
+              seed: generatedPrompt.seed,
+            },
             'Difficulty mismatch between prompt and AI response'
           )
           generatedData.difficulty = requestedDifficulty

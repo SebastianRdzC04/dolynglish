@@ -108,9 +108,7 @@ test.group('Auth | register + login + me + logout', (group) => {
     logoutResponse.assertStatus(200)
 
     // Token should no longer be valid
-    const meResponse = await client
-      .get('/auth/me')
-      .header('Authorization', `Bearer ${bearerToken}`)
+    const meResponse = await client.get('/auth/me').header('Authorization', `Bearer ${bearerToken}`)
 
     meResponse.assertStatus(401)
   })
