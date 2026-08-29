@@ -13,8 +13,30 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
-  // Security & perf
-  app.use(helmet());
+  // Security & perf. Helmet is configured to allow the Scalar API Reference CDN
+  // (cdn.jsdelivr.net) so the /docs page can load its standalone JS bundle.
+  // The /docs route itself is registered BEFORE setGlobalPrefix below so it stays
+  // at the root path (not under /api/v1).
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          fontSrc: ["'self'", 'https:', 'data:'],
+          formAction: ["'self'"],
+          frameAncestors: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
+          scriptSrcAttr: ["'none'"],
+          styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.use(compression());
 
   // Global validation pipe — class-validator + class-transformer
@@ -33,11 +55,9 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // API prefix (configurable via API_PREFIX, default "api/v1")
-  const env = app.get(AppConfigService);
-  app.setGlobalPrefix(env.apiPrefix);
-
-  // OpenAPI / Swagger document (consumed by Scalar UI below)
+  // Scalar API reference at /docs (replaces Swagger UI).
+  // IMPORTANT: register this BEFORE setGlobalPrefix so /docs stays at the root
+  // and not under /api/v1.
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dolynglish API')
     .setDescription('Backend for the Dolynglish mobile app — language learning with AI-generated reading exercises')
@@ -54,7 +74,6 @@ async function bootstrap(): Promise<void> {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  // Scalar API reference at /docs (replaces Swagger UI)
   app.use(
     '/docs',
     apiReference({
@@ -63,6 +82,10 @@ async function bootstrap(): Promise<void> {
       title: 'Dolynglish API',
     }),
   );
+
+  // API prefix (configurable via API_PREFIX, default "api/v1")
+  const env = app.get(AppConfigService);
+  app.setGlobalPrefix(env.apiPrefix);
 
   // Root health-check
   app.getHttpAdapter().get('/', (_req, res) => {
