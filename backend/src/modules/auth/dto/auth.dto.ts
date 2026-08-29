@@ -1,35 +1,33 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
+  @ApiProperty({ example: 'user@example.com', format: 'email', description: 'Unique email address' })
   @IsEmail()
   email!: string;
 
+  @ApiProperty({ minLength: 8, example: 'mySecret123' })
   @IsString()
   @MinLength(8)
   password!: string;
 
+  @ApiProperty({ example: 'Sebastián Rodríguez' })
   @IsString()
   fullName!: string;
 }
 
 export class LoginDto {
+  @ApiProperty({ example: 'user@example.com', format: 'email' })
   @IsEmail()
   email!: string;
 
+  @ApiProperty({ example: 'mySecret123' })
   @IsString()
-  @MinLength(1)
   password!: string;
 }
 
 export class RefreshTokenDto {
+  @ApiProperty({ description: 'Refresh token issued by /auth/login' })
   @IsString()
-  @MinLength(1)
   refreshToken!: string;
 }
-
-// Why `!` (definite assignment) instead of `?` (optional)?
-// We want the DTO to fail validation loudly at the controller boundary
-// if a field is missing, not silently accept undefined. The class-validator
-// pipeline runs the constructor and then applies decorators; the
-// `!` tells TypeScript "trust me, class-validator will populate this"
-// (which it does — see https://github.com/typestack/class-validator).
