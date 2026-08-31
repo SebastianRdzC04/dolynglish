@@ -1,114 +1,58 @@
-/**
- * OpenAPI response envelope DTOs.
- *
- * The live API returns `{ message, data, error? }` on every endpoint. The
- * Nest controllers already use the runtime helper `apiOk(message, data)` /
- * `apiFail(code, message, details)` from `api-response.type.ts`. These
- * DTOs exist SOLELY to feed the OpenAPI generator (SwaggerModule) so
- * Scalar renders the documented success envelope with the actual `data`
- * shape for every endpoint.
- *
- * Design notes
- * ------------
- * - We do NOT subclass or compose with the runtime `ApiResponse<T>`
- *   interface from `api-response.type.ts`: that would create a circular
- *   dependency between the runtime helper and the OpenAPI DTO module.
- *   Instead, these DTOs are a structural mirror used only by the
- *   document builder.
- * - The `data` field is typed as an opaque object; the concrete schema is
- *   supplied by the controller via `schema: { $ref: '#/components/schemas/<DtoName>' }`
- *   on each `@ApiOkResponse({ type, schema })` decoration. Nest merges
- *   the type and the schema in the final spec.
- * - For 204 No Content endpoints, the body is omitted entirely; see
- *   `ApiNoContentResponseDto` for documentation-only purposes.
- */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, type ApiPropertyOptions } from '@nestjs/swagger';
 
-/**
- * Generic success envelope. The `data` property is documented on a
- * per-endpoint basis via the `schema` field of `@ApiOkResponse`.
- *
- * Example on a controller:
- *   @ApiOkResponse({
- *     description: 'Returns user + tokens',
- *     type: ApiSuccessEnvelopeDto,
- *     schema: { allOf: [{ $ref: getSchemaPath(AuthResponseDto) }] },
- *   })
- *
- * The runtime shape matches the live API contract: `{ message: string, data: T, error: null }`.
- */
-export class ApiSuccessEnvelopeDto<TData = unknown> {
+/** Common envelope used by every successful (HTTP 2xx) response. */
+export class ApiSuccessEnvelopeDto<TData> {
   @ApiProperty({
-    description: 'Human-readable success message, safe to display to end users',
-    example: 'User registered successfully',
+    example: 'Reading generated successfully',
+    description: 'Human-readable status message',
   })
   message!: string;
 
-  @ApiProperty({
-    description: 'Endpoint-specific payload. Its shape is defined by the per-endpoint `schema` reference.',
-    type: 'object',
-    additionalProperties: true,
-  })
+  @ApiProperty({ description: 'The shape of the resource (or list of resources) returned.' })
   data!: TData;
 
   @ApiProperty({
-    description: 'Always `null` on success. Present (and non-null) on error.',
     example: null,
     nullable: true,
-    default: null,
+    description: 'Always null on success. Populated on error.',
   })
   error!: null;
 }
 
 /**
- * Convenience class for endpoints that return no body (HTTP 204).
- * Documented for completeness; most callers just use `@HttpCode(204)`
- * without an explicit type.
+ * 204 No Content has no body. This class is what Scalar renders when a
+ * controller returns `void` — keeps the response shape consistent.
  */
 export class ApiNoContentResponseDto {
   @ApiProperty({
-    description: 'No body is returned. This object is documented for completeness only.',
-    example: {},
+    example: { ok: true },
+    description: 'Always present (even on 204) so the envelope stays uniform.',
   })
-  readonly noContent!: Record<string, never>;
+  noContent!: Record<string, never>;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * Domain DTOs (the `data` shapes)
- *
- * Each DTO below is what the controller puts inside `data`. We define them
- * here so Scalar renders the documented shape without forcing controllers
- * to import from multiple module paths.
- *
- * Date fields are typed as `Date` (matching the runtime service return
- * types) — the OpenAPI spec still serialises them as ISO 8601 strings
- * thanks to `format: 'date-time'`, which is what JSON over the wire
- * actually contains.
- * ────────────────────────────────────────────────────────────────────────── */
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Public user shape returned by /auth/register, /auth/login, and /auth/me.
- * Mirrors `PublicUser` from users.service.ts but with @ApiProperty so
- * the OpenAPI generator picks it up.
+ * The `user` slice of /auth/me or /auth/register's response body. Never
+ * includes the password hash.
  */
 export class AuthUserViewDto {
-  @ApiProperty({ example: 13, description: 'Internal user id' })
+  @ApiProperty({ example: 42 })
   id!: number;
 
-  @ApiProperty({ example: 'user@example.com', format: 'email' })
+  @ApiProperty({ example: 'sebastian@example.com' })
   email!: string;
 
-  @ApiProperty({ example: 'Sebastián Rodríguez', nullable: true })
-  fullName!: string | null;
+  @ApiProperty({ example: 'Sebastián Rodríguez' })
+  fullName!: string;
 
-  @ApiProperty({ example: 0, description: 'Current streak in days' })
+  @ApiProperty({ example: 5, description: 'Current active streak in days.' })
   currentStreak!: number;
 
-  @ApiProperty({
-    example: null,
-    nullable: true,
-    description: 'ISO date of last streak activity (null if never active)',
-  })
+  @ApiProperty({ example: null, nullable: true, description: 'Last day the streak was extended.' })
   lastStreakDate!: string | null;
 
   @ApiProperty({ example: '2026-08-31T15:16:43.474Z', format: 'date-time' })
@@ -116,30 +60,21 @@ export class AuthUserViewDto {
 }
 
 /**
- * JWT tokens returned alongside authentication.
+ * JWT pair returned by /auth/register, /auth/login, /auth/refresh.
  */
 export class AuthTokensDto {
-  @ApiProperty({
-    description: 'Short-lived JWT access token. Send as `Authorization: Bearer <token>`.',
-    example: 'eyJhbGciOiJIUzI1NiIs...',
-  })
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…' })
   accessToken!: string;
 
-  @ApiProperty({
-    description: 'Long-lived JWT refresh token. Send to /auth/refresh to obtain a new pair.',
-    example: 'eyJhbGciOiJIUzI1NiIs...',
-  })
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…' })
   refreshToken!: string;
 
-  @ApiProperty({
-    description: 'Access-token lifetime in seconds.',
-    example: 900,
-  })
+  @ApiProperty({ example: 900, description: 'Access token lifetime in seconds.' })
   expiresIn!: number;
 }
 
 /**
- * `data` shape for /auth/register (201) and /auth/login (200).
+ * `data` shape for /auth/register and /auth/login (201 / 200).
  */
 export class AuthResponseDto {
   @ApiProperty({ type: () => AuthUserViewDto })
@@ -165,29 +100,73 @@ export class MeResponseDto {
   user!: AuthUserViewDto;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Readings
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * `data` shape for /readings/options (200).
+ * One category entry returned by /readings/options.
+ */
+export class ReadingCategoryDto {
+  @ApiProperty({
+    example: 'programming',
+    enum: ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture'],
+    description: 'Internal identifier for the category',
+  })
+  id!: 'technology' | 'history' | 'education' | 'programming' | 'culture' | 'pop_culture';
+
+  @ApiProperty({ example: 'Programming', description: 'Human-readable name of the category' })
+  name!: string;
+
+  @ApiProperty({
+    example: ['Web Development', 'Databases'],
+    description:
+      'Sub-topics the LLM can focus on inside this category. Backed by the legacy AdonisJS catalogue.',
+    type: [String],
+  })
+  subcategories!: string[];
+}
+
+/**
+ * One reading size preset returned by /readings/options.
+ */
+export class ReadingSizeDto {
+  @ApiProperty({ example: 'short', enum: ['short', 'medium', 'long'] })
+  id!: 'short' | 'medium' | 'long';
+
+  @ApiProperty({ example: 'Short' })
+  label!: string;
+
+  @ApiProperty({ example: '80-120 words' })
+  wordRange!: string;
+
+  @ApiProperty({ example: '~1 min' })
+  readingTime!: string;
+}
+
+/**
+ * `data` shape for /readings/options (200). Returns the catalogue the
+ * UI needs to populate its pickers — categories with sub-topics, the
+ * three difficulty levels, the three size presets, and informational
+ * CEFR mappings.
  */
 export class ReadingOptionsDto {
   @ApiProperty({
-    type: [String],
-    example: ['technology', 'history', 'education'],
-    description: 'Available content categories',
+    description: 'All available categories with their sub-topics',
+    type: [ReadingCategoryDto],
   })
-  categories!: string[];
+  categories!: ReadingCategoryDto[];
 
-  @ApiProperty({
-    type: [String],
-    example: ['easy', 'medium', 'hard'],
-    description: 'Available difficulty levels',
-  })
+  @ApiProperty({ example: ['easy', 'medium', 'hard'], type: [String] })
   difficulties!: string[];
 
   @ApiProperty({
-    type: [String],
-    example: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
-    description: 'Available CEFR levels (Common European Framework of Reference)',
+    description: 'Reading size presets — controls word count and reading time',
+    type: [ReadingSizeDto],
   })
+  sizes!: ReadingSizeDto[];
+
+  @ApiProperty({ example: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'], type: [String] })
   cefrLevels!: string[];
 }
 
@@ -209,7 +188,10 @@ export class ReadingDto {
   @ApiProperty({ example: 'How a small Microsoft project became the default for web backends.' })
   description!: string;
 
-  @ApiProperty({ description: 'Full reading body in plain text.', example: 'TypeScript was first released in 2012...' })
+  @ApiProperty({
+    description: 'Full reading body in plain text.',
+    example: 'TypeScript was first released in 2012...',
+  })
   content!: string;
 
   @ApiProperty({ example: 'technology', nullable: true })
@@ -230,7 +212,11 @@ export class ReadingDto {
   @ApiProperty({ example: null, nullable: true, description: 'Set after evaluation.' })
   feedback!: string | null;
 
-  @ApiProperty({ example: false, nullable: true, description: 'true if score >= 80. null until evaluation.' })
+  @ApiProperty({
+    example: false,
+    nullable: true,
+    description: 'true if score >= 80. null until evaluation.',
+  })
   passed!: boolean | null;
 
   @ApiProperty({ example: '2026-08-31T15:16:43.474Z', format: 'date-time' })
@@ -239,7 +225,12 @@ export class ReadingDto {
   @ApiProperty({ example: null, nullable: true, format: 'date-time' })
   updatedAt!: Date | null;
 
-  @ApiProperty({ example: null, nullable: true, format: 'date-time', description: 'Soft-delete timestamp.' })
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    format: 'date-time',
+    description: 'Soft-delete timestamp.',
+  })
   deletedAt!: Date | null;
 }
 
@@ -267,12 +258,18 @@ export class EvaluationResultDto {
  * `data` shape for /readings/{id}/explanations (200).
  */
 export class ExplanationResultDto {
-  @ApiProperty({ example: 'In this context, "release" means publishing a new version of software.' })
+  @ApiProperty({
+    example: 'In this context, "release" means publishing a new version of software.',
+  })
   explanation!: string;
 
   @ApiProperty({ type: () => ReadingDto })
   reading!: ReadingDto;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IA
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * `data` shape for /ia/chat (200).
@@ -282,6 +279,10 @@ export class ChatResponseDto {
   text!: string;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Health
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * `data` shape for /health/live and /health/ready (200).
  * Mirrors the `@nestjs/terminus` HealthCheckResult shape.
@@ -290,23 +291,41 @@ export class HealthCheckResultDto {
   @ApiProperty({
     description: 'Per-dependency status map. Keys are dependency identifiers (e.g. "app", "db").',
     type: 'object',
-    additionalProperties: true,
-    example: { app: { status: 'up', uptime: 12345.6 } },
+    additionalProperties: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['up', 'down'] },
+      },
+    },
+    example: {
+      app: { status: 'up', uptime: 12345 },
+      db: { status: 'up' },
+    },
   })
-  info!: Record<string, { status: 'up' | 'down'; [k: string]: unknown }>;
+  info!: Record<string, Record<string, unknown> & { status: 'up' | 'down' }>;
 
   @ApiProperty({
-    description: 'Same shape as `info`. Only populated when a check fails.',
+    description: 'When a dependency is down, the failing key → reason.',
     type: 'object',
-    additionalProperties: true,
-    example: {},
+    nullable: true,
+    example: null,
+    additionalProperties: { type: 'string' },
   })
-  error!: Record<string, { status: 'up' | 'down'; [k: string]: unknown }>;
+  error!: Record<string, Record<string, unknown>> | null;
 
-  @ApiProperty({
-    description: '"up" if all checks passed, "down" otherwise.',
-    enum: ['up', 'down'],
-    example: 'up',
-  })
+  @ApiProperty({ example: 'up', enum: ['up', 'down'] })
   status!: 'up' | 'down';
 }
+
+// Re-export types with the ApiPropertyOptions type so the file is self-contained
+// for callers that import these DTOs from elsewhere.
+export type { ApiPropertyOptions };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Standard error envelope (re-used from common/errors/api-error.dto.ts)
+// The runtime type must be importable, so we re-export it here for the
+// /readings/openapi.json consumers that fetch a single import path.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { ApiErrorDto } from '../errors/api-error.dto';
+export { ApiErrorDto };

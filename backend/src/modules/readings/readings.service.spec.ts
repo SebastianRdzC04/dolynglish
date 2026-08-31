@@ -91,7 +91,16 @@ describe('ReadingsService', () => {
     };
 
     it('calls the AI provider, parses the response, and saves the reading', async () => {
-      const params: RandomPromptParams = { category: 'history', difficulty: 'medium', cefrLevel: 'B2' };
+      const params: RandomPromptParams = {
+        category: 'history',
+        difficulty: 'medium',
+        size: 'medium',
+        subcategories: ['Subcategory test'],
+        contentType: 'interesting_discovery',
+        perspective: 'causes',
+        uniqueFocusElement: 'its impact on daily life',
+      };
+      promptGen.generateRandomParams.mockReturnValue(params);
       promptGen.buildPrompt.mockReturnValue({
         systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-1', params,
       });
@@ -108,9 +117,14 @@ describe('ReadingsService', () => {
 
       const result = await service.generate({
         userId: 42,
-        options: { category: 'history', difficulty: 'medium', cefrLevel: 'B2' },
+        options: { category: 'history', difficulty: 'medium', size: 'medium' },
       });
 
+      expect(promptGen.generateRandomParams).toHaveBeenCalledWith({
+        category: 'history',
+        difficulty: 'medium',
+        size: 'medium',
+      });
       expect(promptGen.buildPrompt).toHaveBeenCalledWith(params);
       expect(factory.getFullResponse).toHaveBeenCalled();
       expect(parser.parseGeneratedText).toHaveBeenCalled();
@@ -118,12 +132,26 @@ describe('ReadingsService', () => {
       expect(result.title).toBe('T');
     });
 
-    it('passes the client-controlled category/difficulty/cefrLevel to the prompt generator verbatim', async () => {
-      const params: RandomPromptParams = { category: 'programming', difficulty: 'hard', cefrLevel: 'C2' };
+    it('passes the client-controlled category/difficulty/size to the prompt generator verbatim', async () => {
+      const params: RandomPromptParams = {
+        category: 'programming',
+        difficulty: 'hard',
+        size: 'medium',
+        subcategories: ['Subcategory test'],
+        contentType: 'interesting_discovery',
+        perspective: 'causes',
+        uniqueFocusElement: 'its impact on daily life',
+      };
+      promptGen.generateRandomParams.mockReturnValue(params);
       promptGen.buildPrompt.mockReturnValue({
-        systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-2', params,
+        systemPrompt: 'sys',
+        userPrompt: 'usr',
+        seed: 'seed-2',
+        params,
       });
-      factory.getFullResponse.mockResolvedValue('{"title":"T","description":"D","content":"C","category":"programming","difficulty":"hard"}');
+      factory.getFullResponse.mockResolvedValue(
+        '{"title":"T","description":"D","content":"C","category":"programming","difficulty":"hard"}',
+      );
       const returned = {
         id: 2, userId: 42, status: 'pending',
         title: 'T', description: 'D', content: 'C', category: 'programming' as const, difficulty: 'hard' as const,
@@ -136,23 +164,40 @@ describe('ReadingsService', () => {
 
       await service.generate({
         userId: 42,
-        options: { category: 'programming', difficulty: 'hard', cefrLevel: 'C2' },
+        options: { category: 'programming', difficulty: 'hard', size: 'medium' },
       });
 
-      expect(promptGen.buildPrompt).toHaveBeenCalledWith({
-        category: 'programming',
-        difficulty: 'hard',
-        cefrLevel: 'C2',
-      });
-      expect(promptGen.generateRandomParams).not.toHaveBeenCalled();
+      // buildPrompt receives the user-chosen category/difficulty/size inside
+      // the params bag (the system fills in subcategories/contentType/etc.).
+      expect(promptGen.buildPrompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'programming',
+          difficulty: 'hard',
+          size: 'medium',
+        }),
+      );
     });
 
-    it('defaults difficulty to medium and resolves a matching cefrLevel when only category is given', async () => {
-      const params: RandomPromptParams = { category: 'culture', difficulty: 'medium', cefrLevel: 'B2' };
+    it('defaults difficulty to medium and size to medium when only category is given', async () => {
+      const params: RandomPromptParams = {
+        category: 'culture',
+        difficulty: 'medium',
+        size: 'medium',
+        subcategories: ['Subcategory test'],
+        contentType: 'interesting_discovery',
+        perspective: 'causes',
+        uniqueFocusElement: 'its impact on daily life',
+      };
+      promptGen.generateRandomParams.mockReturnValue(params);
       promptGen.buildPrompt.mockReturnValue({
-        systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-3', params,
+        systemPrompt: 'sys',
+        userPrompt: 'usr',
+        seed: 'seed-3',
+        params,
       });
-      factory.getFullResponse.mockResolvedValue('{"title":"T","description":"D","content":"C","category":"culture","difficulty":"medium"}');
+      factory.getFullResponse.mockResolvedValue(
+        '{"title":"T","description":"D","content":"C","category":"culture","difficulty":"medium"}',
+      );
       const returned = {
         id: 3, userId: 42, status: 'pending',
         title: 'T', description: 'D', content: 'C', category: 'culture' as const, difficulty: 'medium' as const,
@@ -165,16 +210,22 @@ describe('ReadingsService', () => {
 
       await service.generate({ userId: 42, options: { category: 'culture' } });
 
-      expect(promptGen.buildPrompt).toHaveBeenCalledWith({
-        category: 'culture',
-        difficulty: 'medium',
-        cefrLevel: 'B2',
-      });
+      expect(promptGen.buildPrompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'culture',
+          difficulty: 'medium',
+          size: 'medium',
+        }),
+      );
     });
 
     it('throws BadRequestException if AI returns no usable JSON', async () => {
       promptGen.buildPrompt.mockReturnValue({
-        systemPrompt: 'sys', userPrompt: 'usr', seed: 's', params: { category: 'history', difficulty: 'medium', cefrLevel: 'B2' },
+        systemPrompt: 'sys', userPrompt: 'usr', seed: 's', params: {
+          category: 'history', difficulty: 'medium', size: 'medium',
+          subcategories: ['Subcategory test'], contentType: 'interesting_discovery',
+          perspective: 'causes', uniqueFocusElement: 'its impact on daily life',
+        },
       });
       factory.getFullResponse.mockResolvedValue('no json here');
       parser.parseGeneratedText.mockImplementation(() => {
