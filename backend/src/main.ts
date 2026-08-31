@@ -83,6 +83,15 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
+  // Expose the raw OpenAPI 3.1 JSON document. Useful for tooling that
+  // generates clients, feeds API specs to AI agents, or stores the spec
+  // alongside the source code.
+  app.getHttpAdapter().get('/openapi.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(document);
+  });
+
   // API prefix (configurable via API_PREFIX, default "api/v1")
   const env = app.get(AppConfigService);
   app.setGlobalPrefix(env.apiPrefix);
