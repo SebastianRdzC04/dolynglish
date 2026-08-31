@@ -91,7 +91,6 @@ describe('main.ts bootstrap order produces a consistent OpenAPI document', () =>
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Dolynglish API')
       .setVersion('1.0.0')
-      .addServer(`/${env.apiPrefix}`, 'Dolynglish API (versioned)')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
       .build();
     document = SwaggerModule.createDocument(app, swaggerConfig) as unknown as typeof document;
@@ -126,9 +125,14 @@ describe('main.ts bootstrap order produces a consistent OpenAPI document', () =>
     }
   });
 
-  it('OpenAPI document declares at least one server (so Scalar has a base URL)', () => {
-    expect(Array.isArray(document.servers)).toBe(true);
-    expect((document.servers ?? []).length).toBeGreaterThan(0);
+  it('document.servers is absent or empty (Scalar derives base URL from the browser origin)', () => {
+    // We intentionally do NOT call .addServer() in main.ts. The OpenAPI paths
+    // already carry the /api/v1 prefix (because setGlobalPrefix runs before
+    // createDocument), and Scalar computes its base URL from the page origin.
+    // If servers were present and contained /api/v1, Scalar would concat
+    // /api/v1 + /api/v1/auth/register and produce the broken double-prefix URL.
+    const servers = document.servers ?? [];
+    expect(servers.length).toBe(0);
   });
 
   it('GET /openapi.json is reachable at /api/v1/openapi.json (not at root)', async () => {

@@ -67,11 +67,19 @@ async function bootstrap(): Promise<void> {
   // Scalar API reference at /docs (replaces Swagger UI).
   // IMPORTANT: register this BEFORE the OpenAPI document so /docs stays at
   // the root and is NOT prefixed with /api/v1.
+  //
+  // Note on `.addServer(...)`: DO NOT add a server URL that contains the
+  // API prefix. The paths in the spec already carry the versioned prefix
+  // (because we called `setGlobalPrefix` above before `createDocument`).
+  // If you add a server URL of `/api/v1`, Scalar concatenates it with the
+  // paths and produces routes like `/api/v1/api/v1/auth/register`, which
+  // the app does not serve. Scalar computes its base URL from the page
+  // origin (the actual host:port the browser is on), so leaving servers
+  // empty makes the "Try it" button hit the correct relative path.
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dolynglish API')
     .setDescription('Backend for the Dolynglish mobile app — language learning with AI-generated reading exercises')
     .setVersion('1.0.0')
-    .addServer(`/${env.apiPrefix}`, 'Dolynglish API (versioned)')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
