@@ -92,7 +92,6 @@ describe('ReadingsService', () => {
 
     it('calls the AI provider, parses the response, and saves the reading', async () => {
       const params: RandomPromptParams = { category: 'history', difficulty: 'medium', cefrLevel: 'B2' };
-      promptGen.generateRandomParams.mockReturnValue(params);
       promptGen.buildPrompt.mockReturnValue({
         systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-1', params,
       });
@@ -107,7 +106,10 @@ describe('ReadingsService', () => {
       const localDb = makeDbReturning(returned);
       service = await buildModuleWithDb(localDb);
 
-      const result = await service.generate({ userId: 42, options: undefined });
+      const result = await service.generate({
+        userId: 42,
+        options: { category: 'history', difficulty: 'medium', cefrLevel: 'B2' },
+      });
 
       expect(promptGen.buildPrompt).toHaveBeenCalledWith(params);
       expect(factory.getFullResponse).toHaveBeenCalled();
@@ -116,8 +118,61 @@ describe('ReadingsService', () => {
       expect(result.title).toBe('T');
     });
 
+    it('passes the client-controlled category/difficulty/cefrLevel to the prompt generator verbatim', async () => {
+      const params: RandomPromptParams = { category: 'programming', difficulty: 'hard', cefrLevel: 'C2' };
+      promptGen.buildPrompt.mockReturnValue({
+        systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-2', params,
+      });
+      factory.getFullResponse.mockResolvedValue('{"title":"T","description":"D","content":"C","category":"programming","difficulty":"hard"}');
+      const returned = {
+        id: 2, userId: 42, status: 'pending',
+        title: 'T', description: 'D', content: 'C', category: 'programming' as const, difficulty: 'hard' as const,
+        wordCount: 1, score: null, passed: null,
+        createdAt: new Date(), updatedAt: null, deletedAt: null,
+      };
+      parser.parseGeneratedText.mockReturnValue(returned);
+      const localDb = makeDbReturning(returned);
+      service = await buildModuleWithDb(localDb);
+
+      await service.generate({
+        userId: 42,
+        options: { category: 'programming', difficulty: 'hard', cefrLevel: 'C2' },
+      });
+
+      expect(promptGen.buildPrompt).toHaveBeenCalledWith({
+        category: 'programming',
+        difficulty: 'hard',
+        cefrLevel: 'C2',
+      });
+      expect(promptGen.generateRandomParams).not.toHaveBeenCalled();
+    });
+
+    it('defaults difficulty to medium and resolves a matching cefrLevel when only category is given', async () => {
+      const params: RandomPromptParams = { category: 'culture', difficulty: 'medium', cefrLevel: 'B2' };
+      promptGen.buildPrompt.mockReturnValue({
+        systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-3', params,
+      });
+      factory.getFullResponse.mockResolvedValue('{"title":"T","description":"D","content":"C","category":"culture","difficulty":"medium"}');
+      const returned = {
+        id: 3, userId: 42, status: 'pending',
+        title: 'T', description: 'D', content: 'C', category: 'culture' as const, difficulty: 'medium' as const,
+        wordCount: 1, score: null, passed: null,
+        createdAt: new Date(), updatedAt: null, deletedAt: null,
+      };
+      parser.parseGeneratedText.mockReturnValue(returned);
+      const localDb = makeDbReturning(returned);
+      service = await buildModuleWithDb(localDb);
+
+      await service.generate({ userId: 42, options: { category: 'culture' } });
+
+      expect(promptGen.buildPrompt).toHaveBeenCalledWith({
+        category: 'culture',
+        difficulty: 'medium',
+        cefrLevel: 'B2',
+      });
+    });
+
     it('throws BadRequestException if AI returns no usable JSON', async () => {
-      promptGen.generateRandomParams.mockReturnValue({ category: 'history', difficulty: 'medium', cefrLevel: 'B2' });
       promptGen.buildPrompt.mockReturnValue({
         systemPrompt: 'sys', userPrompt: 'usr', seed: 's', params: { category: 'history', difficulty: 'medium', cefrLevel: 'B2' },
       });
@@ -126,7 +181,9 @@ describe('ReadingsService', () => {
         throw new Error('No JSON object found in response');
       });
       service = await buildModuleWithDb(db);
-      await expect(service.generate({ userId: 42 })).rejects.toBeInstanceOf(AppHttpException);
+      await expect(
+        service.generate({ userId: 42, options: { category: 'history', difficulty: 'medium' } }),
+      ).rejects.toBeInstanceOf(AppHttpException);
     });
   });
 

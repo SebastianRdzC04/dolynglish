@@ -11,7 +11,14 @@ import type { DrizzleDb } from '../../database/database.module';
 import { readings } from '../../database/drizzle/schema';
 import type { Reading, NewReading } from '../../database/drizzle/types';
 import { eq, and, isNull, desc } from 'drizzle-orm';
-import type { GenerateReadingDto, EvaluateReadingDto } from './dto/readings.dto';
+import {
+  GenerateReadingDto,
+  READING_CATEGORIES,
+  READING_CEFR_LEVELS,
+  READING_DIFFICULTIES,
+  resolveCefrLevel,
+  type EvaluateReadingDto,
+} from './dto/readings.dto';
 
 const MAX_PENDING = 3;
 
@@ -26,7 +33,7 @@ export class ReadingsService {
     @Inject(DRIZZLE) private readonly db: DrizzleDb,
   ) {}
 
-  async generate(input: { userId: number; options?: GenerateReadingDto }): Promise<Reading> {
+  async generate(input: { userId: number; options: GenerateReadingDto }): Promise<Reading> {
     const user = await this.users.findById(input.userId);
     if (!user) {
       throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'User' });
@@ -37,9 +44,18 @@ export class ReadingsService {
 throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_PENDING });
     }
 
-    const params: RandomPromptParams = input.options?.seed
-      ? { category: 'history', difficulty: 'medium', cefrLevel: 'B2' }
-      : this.promptGen.generateRandomParams();
+    // Resolve the prompt-generation params from the validated DTO.
+    // class-validator has already rejected enum-mismatches; resolveCefrLevel()
+    // picks a sensible default CEFR level when one wasn't sent or when the
+    // explicit (cefrLevel, difficulty) pair isn't compatible.
+    const params: RandomPromptParams = {
+      category: input.options.category,
+      difficulty: input.options.difficulty ?? 'medium',
+      cefrLevel: resolveCefrLevel({
+        difficulty: input.options.difficulty,
+        cefrLevel: input.options.cefrLevel,
+      }),
+    };
     const prompt = this.promptGen.buildPrompt(params);
 
     let rawResponse: string;
@@ -127,10 +143,13 @@ throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_P
     difficulties: string[];
     cefrLevels: string[];
   }> {
+    // Single source of truth: import the readonly tuples from the DTO so
+    // the GET /readings/options response can never drift away from what
+    // POST /readings actually accepts.
     return {
-      categories: ['technology', 'history', 'education', 'programming', 'culture', 'pop_culture'],
-      difficulties: ['easy', 'medium', 'hard'],
-      cefrLevels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
+      categories: [...READING_CATEGORIES],
+      difficulties: [...READING_DIFFICULTIES],
+      cefrLevels: [...READING_CEFR_LEVELS],
     };
   }
 

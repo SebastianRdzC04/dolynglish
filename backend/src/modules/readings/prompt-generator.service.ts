@@ -19,7 +19,7 @@ const WORD_TARGETS: Record<DifficultyLevel, string> = {
   hard: '280-380',
 };
 
-const CEFR_BY_DIFFICULTY: Record<DifficultyLevel, readonly CefrLevel[]> = {
+export const CEFR_BY_DIFFICULTY: Record<DifficultyLevel, readonly CefrLevel[]> = {
   easy: ['A2', 'B1'],
   medium: ['B2'],
   hard: ['C1', 'C2'],

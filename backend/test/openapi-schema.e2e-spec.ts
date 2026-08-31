@@ -94,11 +94,16 @@ describe('OpenAPI schema documentation', () => {
   });
 
   describe('readings DTOs', () => {
-    it('documents GenerateReadingDto with optional seed', () => {
+    it('documents GenerateReadingDto with category (required), difficulty, and cefrLevel', () => {
       const schema = schemas()['GenerateReadingDto'];
       expect(schema).toBeDefined();
       const props = (schema.properties ?? {}) as Record<string, unknown>;
-      expect(props['seed']).toBeDefined();
+      expect(props['category']).toBeDefined();
+      expect(props['difficulty']).toBeDefined();
+      expect(props['cefrLevel']).toBeDefined();
+      // The previous version of this DTO had a `seed` field that was a
+      // no-op; this regression test pins its removal.
+      expect(props['seed']).toBeUndefined();
     });
 
     it('documents EvaluateReadingDto with userResponse', () => {
