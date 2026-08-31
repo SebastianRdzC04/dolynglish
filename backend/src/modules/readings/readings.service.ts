@@ -1,4 +1,6 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { AppHttpException } from '../../common/errors/app-http.exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { AIProviderFactory } from '../ia/providers/ai-provider.factory';
 import { PromptGeneratorService, type RandomPromptParams } from './prompt-generator.service';
 import { AiResponseParserService, type GeneratedText, type EvaluationResult } from './ai-response-parser.service';
@@ -27,14 +29,12 @@ export class ReadingsService {
   async generate(input: { userId: number; options?: GenerateReadingDto }): Promise<Reading> {
     const user = await this.users.findById(input.userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'User' });
     }
 
     const pendingCount = await this.getPendingCount(input.userId);
     if (pendingCount >= MAX_PENDING) {
-      throw new BadRequestException(
-        `You have reached the maximum of ${MAX_PENDING} pending readings. Complete some before generating more.`,
-      );
+throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_PENDING });
     }
 
     const params: RandomPromptParams = input.options?.seed
@@ -49,7 +49,7 @@ export class ReadingsService {
         { role: 'user', content: prompt.userPrompt },
       ]);
     } catch (err) {
-      throw new BadRequestException(`AI provider failed: ${(err as Error).message}`);
+      throw new AppHttpException(ErrorCode.SERVICE_UNAVAILABLE, { operation: 'ai_chat' });
     }
 
     let parsed: GeneratedText;
@@ -57,7 +57,7 @@ export class ReadingsService {
       parsed = this.parser.parseGeneratedText(rawResponse);
     } catch (err) {
       await this.promptLogs.logPromptError('text_generation_failed', input.userId, (err as Error).message, prompt.seed);
-      throw new BadRequestException('Failed to parse AI response for text generation');
+      throw new AppHttpException(ErrorCode.SERVICE_UNAVAILABLE, { operation: 'ai_parse' });
     }
 
     const wordCount = parsed.content.trim().split(/\s+/).filter(Boolean).length;
@@ -89,7 +89,7 @@ export class ReadingsService {
       .limit(1);
     const reading = rows[0];
     if (!reading || reading.userId !== userId) {
-      throw new NotFoundException('Reading not found');
+      throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'Reading' });
     }
     return reading;
   }
@@ -137,7 +137,7 @@ export class ReadingsService {
   async evaluate(id: number, userId: number, dto: EvaluateReadingDto): Promise<EvaluationResult & { reading: Reading }> {
     const reading = await this.findById(id, userId);
     if (reading.status !== 'pending') {
-      throw new BadRequestException('Reading has already been evaluated');
+      throw new AppHttpException(ErrorCode.READING_ALREADY_EVALUATED, { readingId: id });
     }
 
     const systemPrompt = `You are an English comprehension evaluator for language learners.

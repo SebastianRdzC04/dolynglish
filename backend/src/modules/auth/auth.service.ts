@@ -1,4 +1,6 @@
-import { Injectable, ConflictException, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { AppHttpException } from '../../common/errors/app-http.exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -30,10 +32,7 @@ export class AuthService implements IAuthService {
   async register(input: RegisterDto): Promise<{ user: AuthUserView; tokens: AuthTokens }> {
     const existing = await this.users.findByEmail(input.email);
     if (existing) {
-      throw new ConflictException({
-        code: 'AUTH.EMAIL_TAKEN',
-        message: 'An account with this email already exists',
-      });
+throw new AppHttpException(ErrorCode.AUTH_EMAIL_ALREADY_EXISTS, { email: input.email });
     }
     const created = await this.users.create({
       email: input.email,
@@ -48,17 +47,11 @@ export class AuthService implements IAuthService {
   async login(input: LoginDto): Promise<{ user: AuthUserView; tokens: AuthTokens }> {
     const user = await this.users.findByEmail(input.email);
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'AUTH.INVALID_CREDENTIALS',
-        message: 'Email or password is incorrect',
-      });
+throw new AppHttpException(ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
     const ok = await this.users.verifyPassword(input.password, user.password);
     if (!ok) {
-      throw new UnauthorizedException({
-        code: 'AUTH.INVALID_CREDENTIALS',
-        message: 'Email or password is incorrect',
-      });
+throw new AppHttpException(ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
     const tokens = await this.signTokensFor(user.id, user.email);
     await this.promptLogs.logAuthEvent('user_login', user.id);
@@ -70,16 +63,10 @@ export class AuthService implements IAuthService {
     try {
       payload = await this.jwt.verifyAsync<JwtPayload>(refreshToken);
     } catch {
-      throw new UnauthorizedException({
-        code: 'AUTH.INVALID_REFRESH_TOKEN',
-        message: 'Refresh token is invalid or expired',
-      });
+throw new AppHttpException(ErrorCode.AUTH_TOKEN_INVALID);
     }
     if (payload.type !== 'refresh') {
-      throw new UnauthorizedException({
-        code: 'AUTH.INVALID_REFRESH_TOKEN',
-        message: 'Token is not a refresh token',
-      });
+throw new AppHttpException(ErrorCode.AUTH_TOKEN_INVALID, { reason: 'wrong_type' });
     }
     return this.signTokensFor(payload.sub, payload.email);
   }
@@ -93,10 +80,7 @@ export class AuthService implements IAuthService {
   async me(userId: number): Promise<AuthUserView> {
     const user = await this.users.findById(userId);
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'AUTH.USER_NOT_FOUND',
-        message: 'User no longer exists',
-      });
+throw new AppHttpException(ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
     return this.users.toPublic(user);
   }
