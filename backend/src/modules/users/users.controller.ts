@@ -5,6 +5,7 @@ import { UsersService } from './users.service';
 import { StreakQueryDto } from './dto/streak-query.dto';
 import { StreakResponseDto } from './dto/streak-response.dto';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
+import { apiOk, type ApiResponse } from '../../common/types/api-response.type';
 
 @ApiTags('user')
 @ApiBearerAuth('access-token')
@@ -15,13 +16,13 @@ export class UsersController {
   @Get('streak')
   @ApiOperation({ summary: 'Get the user’s recent streak history' })
   @ApiQuery({ name: 'days', type: StreakQueryDto, required: true })
-  @ApiOkResponse({ type: StreakResponseDto })
+  @ApiOkResponse({ description: 'Streak history wrapped in the standard success envelope', type: StreakResponseDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async getStreak(
     @CurrentUser() current: AuthUser,
     @Query() query: StreakQueryDto,
-  ): Promise<StreakResponseDto> {
+  ): Promise<ApiResponse<StreakResponseDto>> {
     const days = await this.users.activeStreakFor(current.id, query.days);
-    return { days, count: days.length };
+    return apiOk('Streak history', { days, count: days.length });
   }
 }
