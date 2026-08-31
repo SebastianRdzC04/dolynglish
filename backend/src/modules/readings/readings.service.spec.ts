@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { AppHttpException } from '../../common/errors/app-http.exception';
 import { ReadingsService } from './readings.service';
 import { AIProviderFactory } from '../ia/providers/ai-provider.factory';
 import { PromptGeneratorService, type RandomPromptParams } from './prompt-generator.service';
@@ -126,7 +126,7 @@ describe('ReadingsService', () => {
         throw new Error('No JSON object found in response');
       });
       service = await buildModuleWithDb(db);
-      await expect(service.generate({ userId: 42 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.generate({ userId: 42 })).rejects.toBeInstanceOf(AppHttpException);
     });
   });
 
@@ -145,7 +145,7 @@ describe('ReadingsService', () => {
         select: jest.fn().mockReturnValue({ from: jest.fn().mockReturnValue({ where: jest.fn().mockReturnValue({ limit: jest.fn().mockResolvedValue([otherUserReading]) }) }) }),
       };
       service = await buildModuleWithDb(dbOther);
-      await expect(service.findById(1, 42)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findById(1, 42)).rejects.toBeInstanceOf(AppHttpException);
     });
   });
 
