@@ -10,11 +10,16 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiErrorDto } from '../../common/errors/api-error.dto';
+import {
+  EvaluationResultDto,
+  ExplanationResultDto,
+  ReadingDto,
+  ReadingOptionsDto,
+} from '../../common/types/api-response.dto';
 import { ReadingsService } from './readings.service';
 import { CreateExplanationDto, EvaluateReadingDto, GenerateReadingDto } from './dto/readings.dto';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { apiOk, type ApiResponse } from '../../common/types/api-response.type';
-import type { Reading } from '../../database/drizzle/types';
 
 @ApiTags('readings')
 @ApiBearerAuth('access-token')
@@ -24,57 +29,60 @@ export class ReadingsController {
 
   @Get('options')
   @ApiOperation({ summary: 'Get generation options (categories, difficulties, cefr)' })
-  @ApiOkResponse({ description: 'Available options' })
+  @ApiOkResponse({ description: 'Available options', type: ReadingOptionsDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
-  async getOptions(): Promise<ApiResponse<Awaited<ReturnType<ReadingsService['getOptions']>>>> {
+  async getOptions(): Promise<ApiResponse<ReadingOptionsDto>> {
     return apiOk('Generation options', await this.readings.getOptions());
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Generate a new reading using the active AI provider' })
-  @ApiCreatedResponse({ description: 'The newly created reading' })
+  @ApiCreatedResponse({ description: 'The newly created reading', type: ReadingDto })
   @ApiBadRequestResponse({ description: 'Pending limit reached, AI provider failed, or validation error', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async generate(
     @CurrentUser() current: AuthUser,
     @Body() dto: GenerateReadingDto,
-  ): Promise<ApiResponse<Reading>> {
+  ): Promise<ApiResponse<ReadingDto>> {
     const reading = await this.readings.generate({ userId: current.id, options: dto });
-    return apiOk('Reading generated successfully', reading);
+    return apiOk<ReadingDto>('Reading generated successfully', reading as unknown as ReadingDto);
   }
 
   @Get('pending')
   @ApiOperation({ summary: 'List the user’s pending readings' })
-  @ApiOkResponse({ description: 'Array of pending readings' })
+  @ApiOkResponse({ description: 'Array of pending readings', type: [ReadingDto] })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
-  async listPending(@CurrentUser() current: AuthUser): Promise<ApiResponse<Reading[]>> {
-    return apiOk('Pending readings', await this.readings.listPending(current.id));
+  async listPending(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
+    const list = await this.readings.listPending(current.id);
+    return apiOk<ReadingDto[]>('Pending readings', list as unknown as ReadingDto[]);
   }
 
   @Get('completed')
   @ApiOperation({ summary: 'List the user’s completed readings' })
-  @ApiOkResponse({ description: 'Array of completed readings' })
+  @ApiOkResponse({ description: 'Array of completed readings', type: [ReadingDto] })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
-  async listCompleted(@CurrentUser() current: AuthUser): Promise<ApiResponse<Reading[]>> {
-    return apiOk('Completed readings', await this.readings.listCompleted(current.id));
+  async listCompleted(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
+    const list = await this.readings.listCompleted(current.id);
+    return apiOk<ReadingDto[]>('Completed readings', list as unknown as ReadingDto[]);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Fetch a single reading by id' })
-  @ApiOkResponse({ description: 'The reading' })
+  @ApiOkResponse({ description: 'The reading', type: ReadingDto })
   @ApiNotFoundResponse({ description: 'Reading not found or owned by another user', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async findOne(
     @CurrentUser() current: AuthUser,
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<ApiResponse<Reading>> {
-    return apiOk('Reading', await this.readings.findById(id, current.id));
+  ): Promise<ApiResponse<ReadingDto>> {
+    const reading = await this.readings.findById(id, current.id);
+    return apiOk<ReadingDto>('Reading', reading as unknown as ReadingDto);
   }
 
   @Post(':id/evaluate')
   @ApiOperation({ summary: 'Evaluate the user’s summary of a reading' })
-  @ApiOkResponse({ description: 'Score + feedback + updated reading' })
+  @ApiOkResponse({ description: 'Score + feedback + updated reading', type: EvaluationResultDto })
   @ApiBadRequestResponse({ description: 'Validation error or reading already evaluated', type: ApiErrorDto })
   @ApiNotFoundResponse({ description: 'Reading not found', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
@@ -82,14 +90,14 @@ export class ReadingsController {
     @CurrentUser() current: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: EvaluateReadingDto,
-  ): Promise<ApiResponse<{ score: number; passed: boolean; feedback: string; reading: Reading }>> {
+  ): Promise<ApiResponse<EvaluationResultDto>> {
     const result = await this.readings.evaluate(id, current.id, dto);
-    return apiOk('Evaluation complete', result);
+    return apiOk<EvaluationResultDto>('Evaluation complete', result as unknown as EvaluationResultDto);
   }
 
   @Post(':id/explanations')
   @ApiOperation({ summary: 'Explain a word in the context of a reading' })
-  @ApiOkResponse({ description: 'Explanation + reading' })
+  @ApiOkResponse({ description: 'Explanation + reading', type: ExplanationResultDto })
   @ApiBadRequestResponse({ description: 'Validation error', type: ApiErrorDto })
   @ApiNotFoundResponse({ description: 'Reading not found', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
@@ -97,9 +105,9 @@ export class ReadingsController {
     @CurrentUser() current: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreateExplanationDto,
-  ): Promise<ApiResponse<{ explanation: string; reading: Reading }>> {
+  ): Promise<ApiResponse<ExplanationResultDto>> {
     const result = await this.readings.explain(id, current.id, dto.word, dto.context);
-    return apiOk('Explanation', result);
+    return apiOk<ExplanationResultDto>('Explanation', result as unknown as ExplanationResultDto);
   }
 
   @Delete(':id')
