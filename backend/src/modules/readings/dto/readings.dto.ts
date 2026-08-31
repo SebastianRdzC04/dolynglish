@@ -5,6 +5,7 @@ import {
   type CategoryId,
   type CefrLevel,
   type DifficultyLevel,
+  type TextSize,
 } from '../prompt-generator.service';
 
 export const READING_CATEGORIES: readonly CategoryId[] = [
@@ -18,42 +19,32 @@ export const READING_CATEGORIES: readonly CategoryId[] = [
 
 export const READING_DIFFICULTIES: readonly DifficultyLevel[] = ['easy', 'medium', 'hard'] as const;
 
-export const READING_CEFR_LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+export const READING_TEXT_SIZES: readonly TextSize[] = ['short', 'medium', 'long'] as const;
+
+export const READING_CEFR_LEVELS: readonly CefrLevel[] = [
+  'A1',
+  'A2',
+  'B1',
+  'B2',
+  'C1',
+  'C2',
+] as const;
 
 /**
- * Default CEFR levels for each difficulty, exported here so the OpenAPI
- * examples stay aligned with the runtime choices the prompt generator
- * actually picks when the client omits `cefrLevel`.
+ * GenerateReadingDto is the client-facing input for the readings endpoint.
+ *
+ * The user explicitly chooses three things:
+ *   - category  : which topic sub-area to write about
+ *   - difficulty: which target English level + CEFR mapping (A1-A2 / B1-B2 / C1-C2)
+ *   - size      : how long the reading should be (80-120, 150-220, or 250-350 words)
+ *
+ * The system fills in subcategory, content type, perspective, and unique
+ * focus element so every reading comes out at a non-trivial angle and the
+ * LLM doesn't get stale responses.
  */
-function defaultCefrFor(difficulty: DifficultyLevel): CefrLevel {
-  return CEFR_BY_DIFFICULTY[difficulty][0];
-}
-
-/**
- * Returns the CefrLevel that should be used to bias the prompt generator.
- * Picks the explicit `cefrLevel` from the DTO when present AND compatible
- * with the chosen `difficulty`; falls back to the default CEFR level for
- * the chosen `difficulty` when one wasn't sent or when the explicit pair
- * isn't compatible.
- */
-export function resolveCefrLevel(input: {
-  difficulty?: DifficultyLevel;
-  cefrLevel?: CefrLevel;
-}): CefrLevel {
-  const difficulty: DifficultyLevel = input.difficulty ?? 'medium';
-  if (input.cefrLevel) {
-    const allowed = CEFR_BY_DIFFICULTY[difficulty];
-    if (allowed.includes(input.cefrLevel)) {
-      return input.cefrLevel;
-    }
-  }
-  return defaultCefrFor(difficulty);
-}
-
 export class GenerateReadingDto {
   @ApiProperty({
-    description:
-      'Topic for the generated reading. The LLM is biased to write about this category but may pick a sub-topic on its own. **Required**.',
+    description: 'Topic category for the generated reading. **Required.**',
     enum: READING_CATEGORIES,
     example: 'technology',
   })
@@ -63,7 +54,9 @@ export class GenerateReadingDto {
 
   @ApiProperty({
     description:
-      'Difficulty controls word count (easy: 100–150, medium: 180–260, hard: 280–380) and the target CEFR level. Defaults to `medium`.',
+      'Target English level — drives both the vocabulary and grammar ' +
+      'guidelines in the LLM prompt. Defaults to `medium` ' +
+      '(B1-B2, intermediate).',
     enum: READING_DIFFICULTIES,
     default: 'medium',
     example: 'medium',
@@ -75,22 +68,20 @@ export class GenerateReadingDto {
 
   @ApiProperty({
     description:
-      'Explicit CEFR level (A1–C2). If omitted, the backend picks the default for the chosen `difficulty`. `easy` → A2/B1, `medium` → B2, `hard` → C1/C2.',
-    enum: READING_CEFR_LEVELS,
-    example: 'B2',
+      'How long the reading should be. `short` (~1 min), `medium` (~2 min), ' +
+      'or `long` (~3 min). Defaults to `medium`.',
+    enum: READING_TEXT_SIZES,
+    default: 'medium',
+    example: 'medium',
     required: false,
   })
   @IsOptional()
-  @IsIn(READING_CEFR_LEVELS as readonly string[])
-  cefrLevel?: CefrLevel;
+  @IsIn(READING_TEXT_SIZES as readonly string[])
+  size?: TextSize;
 
-  /**
-   * Default CEFR levels for each difficulty. Exported so the OpenAPI
-   * examples stay aligned with the runtime choices the prompt generator
-   * makes when the client omits `cefrLevel`.
-   */
-  static defaultCefrForDifficulty(difficulty: DifficultyLevel): CefrLevel {
-    return CEFR_BY_DIFFICULTY[difficulty][0];
+  /** Lookup kept around for /readings/options; not exposed in the API. */
+  static cefrLevelsForDifficulty(difficulty: DifficultyLevel): readonly CefrLevel[] {
+    return CEFR_BY_DIFFICULTY[difficulty];
   }
 }
 
@@ -98,7 +89,8 @@ export class EvaluateReadingDto {
   @ApiProperty({
     minLength: 20,
     description: 'The user’s summary of the reading. Must be at least 20 chars.',
-    example: 'The reading was about the Industrial Revolution and how steam engines changed manufacturing.',
+    example:
+      'The reading was about the Industrial Revolution and how steam engines changed manufacturing.',
   })
   @IsString()
   @Length(20)

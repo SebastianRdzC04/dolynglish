@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -32,14 +43,20 @@ export class ReadingsController {
   @ApiOkResponse({ description: 'Available options', type: ReadingOptionsDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async getOptions(): Promise<ApiResponse<ReadingOptionsDto>> {
-    return apiOk('Generation options', await this.readings.getOptions());
+    return apiOk(
+      'Generation options',
+      (await this.readings.getOptions()) as unknown as ReadingOptionsDto,
+    );
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Generate a new reading using the active AI provider' })
   @ApiCreatedResponse({ description: 'The newly created reading', type: ReadingDto })
-  @ApiBadRequestResponse({ description: 'Pending limit reached, AI provider failed, or validation error', type: ApiErrorDto })
+  @ApiBadRequestResponse({
+    description: 'Pending limit reached, AI provider failed, or validation error',
+    type: ApiErrorDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async generate(
     @CurrentUser() current: AuthUser,
@@ -70,7 +87,10 @@ export class ReadingsController {
   @Get(':id')
   @ApiOperation({ summary: 'Fetch a single reading by id' })
   @ApiOkResponse({ description: 'The reading', type: ReadingDto })
-  @ApiNotFoundResponse({ description: 'Reading not found or owned by another user', type: ApiErrorDto })
+  @ApiNotFoundResponse({
+    description: 'Reading not found or owned by another user',
+    type: ApiErrorDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async findOne(
     @CurrentUser() current: AuthUser,
@@ -83,7 +103,10 @@ export class ReadingsController {
   @Post(':id/evaluate')
   @ApiOperation({ summary: 'Evaluate the user’s summary of a reading' })
   @ApiOkResponse({ description: 'Score + feedback + updated reading', type: EvaluationResultDto })
-  @ApiBadRequestResponse({ description: 'Validation error or reading already evaluated', type: ApiErrorDto })
+  @ApiBadRequestResponse({
+    description: 'Validation error or reading already evaluated',
+    type: ApiErrorDto,
+  })
   @ApiNotFoundResponse({ description: 'Reading not found', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async evaluate(
@@ -92,7 +115,10 @@ export class ReadingsController {
     @Body() dto: EvaluateReadingDto,
   ): Promise<ApiResponse<EvaluationResultDto>> {
     const result = await this.readings.evaluate(id, current.id, dto);
-    return apiOk<EvaluationResultDto>('Evaluation complete', result as unknown as EvaluationResultDto);
+    return apiOk<EvaluationResultDto>(
+      'Evaluation complete',
+      result as unknown as EvaluationResultDto,
+    );
   }
 
   @Post(':id/explanations')

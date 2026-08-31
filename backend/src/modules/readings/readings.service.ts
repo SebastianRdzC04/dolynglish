@@ -2,8 +2,16 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppHttpException } from '../../common/errors/app-http.exception';
 import { ErrorCode } from '../../common/errors/error-codes';
 import { AIProviderFactory } from '../ia/providers/ai-provider.factory';
-import { PromptGeneratorService, type RandomPromptParams } from './prompt-generator.service';
-import { AiResponseParserService, type GeneratedText, type EvaluationResult } from './ai-response-parser.service';
+import {
+  PromptGeneratorService,
+  type RandomPromptParams,
+  type DifficultyLevel,
+} from './prompt-generator.service';
+import {
+  AiResponseParserService,
+  type GeneratedText,
+  type EvaluationResult,
+} from './ai-response-parser.service';
 import { PromptLogService } from './prompt-log.service';
 import { UsersService } from '../users/users.service';
 import { DRIZZLE } from '../../database/database.tokens';
@@ -16,7 +24,6 @@ import {
   READING_CATEGORIES,
   READING_CEFR_LEVELS,
   READING_DIFFICULTIES,
-  resolveCefrLevel,
   type EvaluateReadingDto,
 } from './dto/readings.dto';
 
@@ -41,21 +48,17 @@ export class ReadingsService {
 
     const pendingCount = await this.getPendingCount(input.userId);
     if (pendingCount >= MAX_PENDING) {
-throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_PENDING });
+      throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_PENDING });
     }
 
-    // Resolve the prompt-generation params from the validated DTO.
-    // class-validator has already rejected enum-mismatches; resolveCefrLevel()
-    // picks a sensible default CEFR level when one wasn't sent or when the
-    // explicit (cefrLevel, difficulty) pair isn't compatible.
-    const params: RandomPromptParams = {
+    // The client controls 3 explicit fields (category, difficulty, size).
+    // The system picks the rest — subcategory focus, content type, perspective
+    // and unique angle — so the LLM gets a non-trivial composition every time.
+    const params: RandomPromptParams = this.promptGen.generateRandomParams({
       category: input.options.category,
       difficulty: input.options.difficulty ?? 'medium',
-      cefrLevel: resolveCefrLevel({
-        difficulty: input.options.difficulty,
-        cefrLevel: input.options.cefrLevel,
-      }),
-    };
+      size: input.options.size ?? 'medium',
+    });
     const prompt = this.promptGen.buildPrompt(params);
 
     let rawResponse: string;
@@ -72,8 +75,41 @@ throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_P
     try {
       parsed = this.parser.parseGeneratedText(rawResponse);
     } catch (err) {
-      await this.promptLogs.logPromptError('text_generation_failed', input.userId, (err as Error).message, prompt.seed);
+      await this.promptLogs.logPromptError(
+        'text_generation_failed',
+        input.userId,
+        (err as Error).message,
+        prompt.seed,
+      );
       throw new AppHttpException(ErrorCode.SERVICE_UNAVAILABLE, { operation: 'ai_parse' });
+    }
+
+    // Enforce the requested difficulty. The system prompt tells the LLM
+    // the output "difficulty" field MUST be the requested one, but if the
+    // model ignores that and returns a different level, we override it
+    // before persisting so the database stays in sync with the user's
+    // request. This matches the legacy AdonisJS behaviour.
+    const requestedDifficulty: DifficultyLevel = (input.options.difficulty ??
+      'medium') as DifficultyLevel;
+    if (parsed.difficulty !== requestedDifficulty) {
+      const previousDifficulty = parsed.difficulty;
+      parsed = { ...parsed, difficulty: requestedDifficulty };
+      // Don't bail — log and continue.
+      // eslint-disable-next-line no-console
+      console.warn('Difficulty mismatch between prompt and AI response', {
+        userId: input.userId,
+        requestedDifficulty,
+        aiReturnedDifficulty: previousDifficulty,
+        seed: prompt.seed,
+      });
+    }
+
+    // Normalise the category too: the LLM should echo one of the documented
+    // values. If it picks something off-list, fall back to what the user
+    // requested so the reading stays in scope.
+    const allowedCategories = new Set<string>(READING_CATEGORIES);
+    if (!allowedCategories.has(parsed.category)) {
+      parsed = { ...parsed, category: input.options.category };
     }
 
     const wordCount = parsed.content.trim().split(/\s+/).filter(Boolean).length;
@@ -93,7 +129,21 @@ throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_P
     if (!inserted) {
       throw new Error('Insert returned no rows');
     }
-    await this.promptLogs.logPromptSuccess('text_generated', input.userId, inserted.id, prompt.seed, { ...params });
+    await this.promptLogs.logPromptSuccess(
+      'text_generated',
+      input.userId,
+      inserted.id,
+      prompt.seed,
+      {
+        category: prompt.params.category,
+        difficulty: prompt.params.difficulty,
+        size: prompt.params.size,
+        subcategories: prompt.params.subcategories,
+        contentType: prompt.params.contentType,
+        perspective: prompt.params.perspective,
+        uniqueFocusElement: prompt.params.uniqueFocusElement,
+      },
+    );
     return inserted;
   }
 
@@ -138,22 +188,42 @@ throw new AppHttpException(ErrorCode.READING_PENDING_LIMIT_REACHED, { max: MAX_P
       .orderBy(desc(readings.createdAt));
   }
 
-  async getOptions(): Promise<{
-    categories: string[];
+  /**
+   * Returns the static configuration the UI needs to populate its
+   * category/difficulty/size pickers. Backed by the prompt-generator's
+   * service-side catalogue so the UI can never offer a value that the
+   * backend can't render.
+   */
+  getOptions(): {
+    categories: { id: string; name: string; subcategories: { id: string; name: string }[] }[];
     difficulties: string[];
+    sizes: { id: string; label: string; wordRange: string; readingTime: string }[];
     cefrLevels: string[];
-  }> {
-    // Single source of truth: import the readonly tuples from the DTO so
-    // the GET /readings/options response can never drift away from what
-    // POST /readings actually accepts.
+  } {
+    const cats = this.promptGen.getAvailableCategories();
+    const sizes = this.promptGen.getAvailableSizes();
     return {
-      categories: [...READING_CATEGORIES],
+      categories: cats.map((c) => ({
+        id: c.id,
+        name: c.name,
+        subcategories: c.subcategories.map((sub) => ({ id: sub.id, name: sub.name })),
+      })),
       difficulties: [...READING_DIFFICULTIES],
+      sizes: sizes.map((s) => ({
+        id: s.label,
+        label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
+        wordRange: `${s.min}-${s.max} words`,
+        readingTime: s.readingTime,
+      })),
       cefrLevels: [...READING_CEFR_LEVELS],
     };
   }
 
-  async evaluate(id: number, userId: number, dto: EvaluateReadingDto): Promise<EvaluationResult & { reading: Reading }> {
+  async evaluate(
+    id: number,
+    userId: number,
+    dto: EvaluateReadingDto,
+  ): Promise<EvaluationResult & { reading: Reading }> {
     const reading = await this.findById(id, userId);
     if (reading.status !== 'pending') {
       throw new AppHttpException(ErrorCode.READING_ALREADY_EVALUATED, { readingId: id });
@@ -228,7 +298,12 @@ The explanation should be 1-2 sentences, simple enough for a B1-B2 learner.`;
 
     let explanation: string;
     try {
-      const parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()) as { explanation?: string };
+      const parsed = JSON.parse(
+        raw
+          .replace(/```json\s*/g, '')
+          .replace(/```\s*/g, '')
+          .trim(),
+      ) as { explanation?: string };
       explanation = String(parsed.explanation ?? raw.trim());
     } catch {
       explanation = raw.trim();

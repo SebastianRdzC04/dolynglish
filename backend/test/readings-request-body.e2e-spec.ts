@@ -1,19 +1,20 @@
 /**
  * E2E coverage guard for the GenerateReadingDto request body. Asserts the
- * schema is documented in OpenAPI with the three fields the LLM uses to
- * bias generation: `category`, `difficulty`, `cefrLevel`.
+ * schema is documented in OpenAPI with the three fields the LLM sees:
+ * `category` (req), `difficulty`, `size`.
  *
  * Historical bug (2026-08-30): the migration to Nest dropped the body
  * parameters that the old AdonisJS API accepted, leaving only an inert
- * `seed` field. Clients had no way to ask for "a hard programming text
- * about TypeScript" — the backend picked a random combination instead.
- * This test pins the contract: every field the prompt generator reads
- * from the request body must appear in the spec with the correct
- * semantic and example.
+ * `seed` field. Clients had no way to ask for a specific topic or
+ * difficulty; the backend picked a random combo behind the scenes.
+ * Reported by Sebas via WhatsApp after seeing the OpenAPI doc show only
+ * `{ seed: string }` under the request body — and again after we exposed
+ * `cefrLevel` to the client without giving them `size`.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import supertest from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AppConfigService } from '../src/config/env.config';
 
@@ -46,7 +47,18 @@ describe('POST /readings request body is fully documented', () => {
       string,
       Record<string, { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }>
     >;
-    components?: { schemas?: Record<string, { properties?: Record<string, { type?: string; enum?: string[]; example?: unknown }> }> };
+    components?: {
+      schemas?: Record<
+        string,
+        {
+          properties?: Record<
+            string,
+            { type?: string; enum?: string[]; example?: unknown; description?: string }
+          >;
+          required?: string[];
+        }
+      >;
+    };
   };
 
   beforeAll(async () => {
@@ -101,7 +113,7 @@ describe('POST /readings request body is fully documented', () => {
     expect(ref).toBe('#/components/schemas/GenerateReadingDto');
   });
 
-  it('GenerateReadingDto documents category with the right enum and example', () => {
+  it('GenerateReadingDto documents category (required) with the right enum and example', () => {
     const schema = document.components?.schemas?.['GenerateReadingDto'];
     expect(schema).toBeDefined();
     const category = schema?.properties?.['category'];
@@ -111,9 +123,10 @@ describe('POST /readings request body is fully documented', () => {
       expect.arrayContaining(['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']),
     );
     expect(category?.example).toBe('technology');
+    expect(schema?.required).toEqual(expect.arrayContaining(['category']));
   });
 
-  it('GenerateReadingDto documents difficulty with the right enum and example', () => {
+  it('GenerateReadingDto documents difficulty (optional) with the right enum and example', () => {
     const difficulty = document.components?.schemas?.['GenerateReadingDto']?.properties?.['difficulty'];
     expect(difficulty).toBeDefined();
     expect(difficulty?.type).toBe('string');
@@ -121,16 +134,30 @@ describe('POST /readings request body is fully documented', () => {
     expect(difficulty?.example).toBe('medium');
   });
 
-  it('GenerateReadingDto documents cefrLevel with the right enum and example', () => {
-    const cefrLevel = document.components?.schemas?.['GenerateReadingDto']?.properties?.['cefrLevel'];
-    expect(cefrLevel).toBeDefined();
-    expect(cefrLevel?.type).toBe('string');
-    expect(cefrLevel?.enum).toEqual(expect.arrayContaining(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']));
-    expect(cefrLevel?.example).toBe('B2');
+  it('GenerateReadingDto documents size (optional) with the right enum and example', () => {
+    const size = document.components?.schemas?.['GenerateReadingDto']?.properties?.['size'];
+    expect(size).toBeDefined();
+    expect(size?.type).toBe('string');
+    expect(size?.enum).toEqual(expect.arrayContaining(['short', 'medium', 'long']));
+    expect(size?.example).toBe('medium');
   });
 
-  it('does NOT expose a `seed` field (it was a no-op in the previous version)', () => {
-    const schema = document.components?.schemas?.['GenerateReadingDto'];
-    expect(schema?.properties?.['seed']).toBeUndefined();
+  it('GenerateReadingDto does NOT expose cefrLevel (derived internally)', () => {
+    const cefrLevel = document.components?.schemas?.['GenerateReadingDto']?.properties?.['cefrLevel'];
+    expect(cefrLevel).toBeUndefined();
+  });
+
+  it('does NOT expose the legacy `seed` field (it was a no-op in the previous version)', () => {
+    const seed = document.components?.schemas?.['GenerateReadingDto']?.properties?.['seed'];
+    expect(seed).toBeUndefined();
+  });
+
+  it('live OpenAPI: /api/v1/openapi.json references GenerateReadingDto for POST /readings', async () => {
+    const response = await supertest(app.getHttpServer()).get('/api/v1/openapi.json').expect(200);
+    const live = response.body as {
+      paths?: Record<string, Record<string, { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }>>;
+    };
+    const ref = live.paths?.['/api/v1/readings']?.post?.requestBody?.content?.['application/json']?.schema?.$ref;
+    expect(ref).toBe('#/components/schemas/GenerateReadingDto');
   });
 });

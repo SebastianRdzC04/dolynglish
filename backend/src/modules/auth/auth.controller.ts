@@ -18,6 +18,8 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { AppHttpException } from '../../common/errors/app-http.exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { apiOk, type ApiResponse } from '../../common/types/api-response.type';
 
@@ -31,14 +33,15 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new account and return access + refresh tokens' })
   @ApiCreatedResponse({
-    description: 'User registered. Returns the public user profile plus an access/refresh token pair.',
+    description:
+      'User registered. Returns the public user profile plus an access/refresh token pair.',
     type: AuthResponseDto,
   })
   @ApiConflictResponse({ description: 'Email already in use', type: ApiErrorDto })
   @ApiBadRequestResponse({ description: 'Validation failed', type: ApiErrorDto })
   async register(@Body() dto: RegisterDto): Promise<ApiResponse<AuthResponseDto>> {
     const result = await this.auth.register(dto);
-    return apiOk('User registered successfully', result);
+    return apiOk('User registered successfully', result as unknown as AuthResponseDto);
   }
 
   @Public()
@@ -53,7 +56,7 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Validation failed', type: ApiErrorDto })
   async login(@Body() dto: LoginDto): Promise<ApiResponse<AuthResponseDto>> {
     const result = await this.auth.login(dto);
-    return apiOk('Login successful', result);
+    return apiOk('Login successful', result as unknown as AuthResponseDto);
   }
 
   @Public()
@@ -88,6 +91,9 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async me(@CurrentUser() current: AuthUser): Promise<ApiResponse<AuthUserViewDto>> {
     const user = await this.auth.me(current.id);
-    return apiOk('Current user', user);
+    if (!user) {
+      throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'User' });
+    }
+    return apiOk('Current user', user as unknown as AuthUserViewDto);
   }
 }
