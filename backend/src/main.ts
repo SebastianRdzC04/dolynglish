@@ -55,13 +55,23 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
+  // API prefix (configurable via API_PREFIX, default "api/v1").
+  // MUST run BEFORE SwaggerModule.createDocument so the OpenAPI document
+  // advertises paths under /api/v1/... and Scalar's "Try it" hits the
+  // real route. Moving this after createDocument was the root cause of
+  // the production bug where /docs showed POST /auth/register but the
+  // live server only accepted POST /api/v1/auth/register.
+  const env = app.get(AppConfigService);
+  app.setGlobalPrefix(env.apiPrefix);
+
   // Scalar API reference at /docs (replaces Swagger UI).
-  // IMPORTANT: register this BEFORE setGlobalPrefix so /docs stays at the root
-  // and not under /api/v1.
+  // IMPORTANT: register this BEFORE the OpenAPI document so /docs stays at
+  // the root and is NOT prefixed with /api/v1.
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dolynglish API')
     .setDescription('Backend for the Dolynglish mobile app — language learning with AI-generated reading exercises')
     .setVersion('1.0.0')
+    .addServer(`/${env.apiPrefix}`, 'Dolynglish API (versioned)')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
@@ -83,18 +93,15 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Expose the raw OpenAPI 3.1 JSON document. Useful for tooling that
+  // Expose the raw OpenAPI 3.1 JSON document at the versioned prefix so
+  // it matches the path the app actually serves. Useful for tooling that
   // generates clients, feeds API specs to AI agents, or stores the spec
   // alongside the source code.
-  app.getHttpAdapter().get('/openapi.json', (_req, res) => {
+  app.getHttpAdapter().get(`/${env.apiPrefix}/openapi.json`, (_req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.json(document);
   });
-
-  // API prefix (configurable via API_PREFIX, default "api/v1")
-  const env = app.get(AppConfigService);
-  app.setGlobalPrefix(env.apiPrefix);
 
   // Root health-check
   app.getHttpAdapter().get('/', (_req, res) => {
