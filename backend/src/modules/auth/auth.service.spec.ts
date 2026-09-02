@@ -4,13 +4,15 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService, type PublicUser } from '../users/users.service';
-import { PromptLogService } from '../readings/prompt-log.service';
+import { AuthEventLogService } from '../readings/prompt-logs';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let usersService: jest.Mocked<Pick<UsersService, 'findByEmail' | 'findById' | 'create' | 'verifyPassword' | 'toPublic'>>;
+  let usersService: jest.Mocked<
+    Pick<UsersService, 'findByEmail' | 'findById' | 'create' | 'verifyPassword' | 'toPublic'>
+  >;
   let jwtService: jest.Mocked<Pick<JwtService, 'signAsync' | 'verifyAsync'>>;
-  let promptLogService: jest.Mocked<Pick<PromptLogService, 'logAuthEvent'>>;
+  let authEventLogService: jest.Mocked<Pick<AuthEventLogService, 'logAuthEvent'>>;
 
   const publicUserFixture: PublicUser = {
     id: 1,
@@ -35,7 +37,7 @@ describe('AuthService', () => {
       verifyAsync: jest.fn(),
     } as never;
 
-    promptLogService = {
+    authEventLogService = {
       logAuthEvent: jest.fn().mockResolvedValue(undefined),
     } as never;
 
@@ -53,7 +55,7 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: usersService },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configMock },
-        { provide: PromptLogService, useValue: promptLogService },
+        { provide: AuthEventLogService, useValue: authEventLogService },
       ],
     }).compile();
 
@@ -62,13 +64,21 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('creates a user, logs the event, and returns tokens', async () => {
-      const userRow = { id: 1, email: 'a@b.c', password: 'hash', fullName: 'A B', currentStreak: 0, lastStreakDate: null, createdAt: new Date(), updatedAt: null, deletedAt: null };
+      const userRow = {
+        id: 1,
+        email: 'a@b.c',
+        password: 'hash',
+        fullName: 'A B',
+        currentStreak: 0,
+        lastStreakDate: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+      };
       usersService.findByEmail.mockResolvedValue(null);
       usersService.create.mockResolvedValue(userRow as never);
       usersService.toPublic.mockReturnValue(publicUserFixture);
-      jwtService.signAsync
-        .mockResolvedValueOnce('access.jwt')
-        .mockResolvedValueOnce('refresh.jwt');
+      jwtService.signAsync.mockResolvedValueOnce('access.jwt').mockResolvedValueOnce('refresh.jwt');
 
       const result = await service.register({
         email: 'a@b.c',
@@ -81,7 +91,7 @@ describe('AuthService', () => {
         password: 'secret123',
         fullName: 'A B',
       });
-      expect(promptLogService.logAuthEvent).toHaveBeenCalledWith('user_registered', 1);
+      expect(authEventLogService.logAuthEvent).toHaveBeenCalledWith('user_registered', 1);
       expect(result.tokens.accessToken).toBe('access.jwt');
       expect(result.tokens.refreshToken).toBe('refresh.jwt');
       expect(result.user.email).toBe('a@b.c');
@@ -99,7 +109,17 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('returns tokens for valid credentials', async () => {
-      const userRow = { id: 1, email: 'a@b.c', password: 'hash', fullName: 'A B', currentStreak: 0, lastStreakDate: null, createdAt: new Date(), updatedAt: null, deletedAt: null };
+      const userRow = {
+        id: 1,
+        email: 'a@b.c',
+        password: 'hash',
+        fullName: 'A B',
+        currentStreak: 0,
+        lastStreakDate: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+      };
       usersService.findByEmail.mockResolvedValue(userRow as never);
       usersService.verifyPassword.mockResolvedValue(true);
       usersService.toPublic.mockReturnValue(publicUserFixture);
@@ -108,25 +128,49 @@ describe('AuthService', () => {
       const result = await service.login({ email: 'a@b.c', password: 'secret123' });
 
       expect(result.tokens.accessToken).toBe('access.jwt');
-      expect(promptLogService.logAuthEvent).toHaveBeenCalledWith('user_login', 1);
+      expect(authEventLogService.logAuthEvent).toHaveBeenCalledWith('user_login', 1);
     });
 
     it('throws UnauthorizedException for unknown email', async () => {
       usersService.findByEmail.mockResolvedValue(null);
-      await expect(service.login({ email: 'a@b.c', password: 'x' })).rejects.toBeInstanceOf(AppHttpException);
+      await expect(service.login({ email: 'a@b.c', password: 'x' })).rejects.toBeInstanceOf(
+        AppHttpException,
+      );
     });
 
     it('throws UnauthorizedException for wrong password', async () => {
-      const userRow = { id: 1, email: 'a@b.c', password: 'hash', fullName: 'A B', currentStreak: 0, lastStreakDate: null, createdAt: new Date(), updatedAt: null, deletedAt: null };
+      const userRow = {
+        id: 1,
+        email: 'a@b.c',
+        password: 'hash',
+        fullName: 'A B',
+        currentStreak: 0,
+        lastStreakDate: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+      };
       usersService.findByEmail.mockResolvedValue(userRow as never);
       usersService.verifyPassword.mockResolvedValue(false);
-      await expect(service.login({ email: 'a@b.c', password: 'wrong' })).rejects.toBeInstanceOf(AppHttpException);
+      await expect(service.login({ email: 'a@b.c', password: 'wrong' })).rejects.toBeInstanceOf(
+        AppHttpException,
+      );
     });
   });
 
   describe('me', () => {
     it('returns the public user view', async () => {
-      const userRow = { id: 1, email: 'a@b.c', password: 'x', fullName: 'A B', currentStreak: 0, lastStreakDate: null, createdAt: new Date(), updatedAt: null, deletedAt: null };
+      const userRow = {
+        id: 1,
+        email: 'a@b.c',
+        password: 'x',
+        fullName: 'A B',
+        currentStreak: 0,
+        lastStreakDate: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+      };
       usersService.findById.mockResolvedValue(userRow as never);
       usersService.toPublic.mockReturnValue(publicUserFixture);
       const me = await service.me(1);
