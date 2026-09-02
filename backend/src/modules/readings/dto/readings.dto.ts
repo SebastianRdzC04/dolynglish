@@ -2,33 +2,17 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, Length } from 'class-validator';
 import {
   CEFR_BY_DIFFICULTY,
-  type CategoryId,
-  type CefrLevel,
-  type DifficultyLevel,
-  type TextSize,
-} from '../prompt-generator.service';
-
-export const READING_CATEGORIES: readonly CategoryId[] = [
-  'technology',
-  'history',
-  'education',
-  'programming',
-  'culture',
-  'pop_culture',
-] as const;
-
-export const READING_DIFFICULTIES: readonly DifficultyLevel[] = ['easy', 'medium', 'hard'] as const;
-
-export const READING_TEXT_SIZES: readonly TextSize[] = ['short', 'medium', 'long'] as const;
-
-export const READING_CEFR_LEVELS: readonly CefrLevel[] = [
-  'A1',
-  'A2',
-  'B1',
-  'B2',
-  'C1',
-  'C2',
-] as const;
+  READING_CATEGORIES,
+  READING_CEFR_LEVELS,
+  READING_DIFFICULTIES,
+  READING_TEXT_SIZES,
+} from '../prompt-generation';
+import type {
+  CategoryId,
+  CefrLevel,
+  DifficultyLevel,
+  TextSize,
+} from '../prompt-generation/catalog.types';
 
 /**
  * GenerateReadingDto is the client-facing input for the readings endpoint.
@@ -111,3 +95,5 @@ export class CreateExplanationDto {
   @IsString()
   context?: string;
 }
+
+export { READING_CATEGORIES, READING_DIFFICULTIES, READING_TEXT_SIZES, READING_CEFR_LEVELS };

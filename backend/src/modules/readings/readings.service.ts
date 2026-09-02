@@ -2,17 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppHttpException } from '../../common/errors/app-http.exception';
 import { ErrorCode } from '../../common/errors/error-codes';
 import { AIProviderFactory } from '../ia/providers/ai-provider.factory';
-import {
-  PromptGeneratorService,
-  type RandomPromptParams,
-  type DifficultyLevel,
-} from './prompt-generator.service';
+import { PromptBuilderService, READING_CATEGORIES } from './prompt-generation';
+import type { DifficultyLevel, RandomPromptParams } from './prompt-generation/catalog.types';
 import {
   AiResponseParserService,
   type GeneratedText,
   type EvaluationResult,
 } from './ai-response-parser.service';
-import { PromptLogService } from './prompt-log.service';
+import { PromptLogService } from './prompt-logs';
 import { UsersService } from '../users/users.service';
 import { DRIZZLE } from '../../database/database.tokens';
 import type { DrizzleDb } from '../../database/database.module';
@@ -21,7 +18,6 @@ import type { Reading, NewReading } from '../../database/drizzle/types';
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import {
   GenerateReadingDto,
-  READING_CATEGORIES,
   READING_CEFR_LEVELS,
   READING_DIFFICULTIES,
   type EvaluateReadingDto,
@@ -33,7 +29,7 @@ const MAX_PENDING = 3;
 export class ReadingsService {
   constructor(
     private readonly factory: AIProviderFactory,
-    private readonly promptGen: PromptGeneratorService,
+    private readonly promptGen: PromptBuilderService,
     private readonly parser: AiResponseParserService,
     private readonly promptLogs: PromptLogService,
     private readonly users: UsersService,
