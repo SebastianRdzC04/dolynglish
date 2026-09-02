@@ -258,6 +258,8 @@ Evaluate how well the user understood the main idea of the text.`;
       .set({
         score: result.score,
         passed: result.passed,
+        userResponse: dto.userResponse,
+        feedback: result.feedback,
         status: 'completed',
         updatedAt: new Date(),
       })

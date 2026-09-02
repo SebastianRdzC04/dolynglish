@@ -46,19 +46,17 @@ describe('ReadingsService', () => {
     } as never;
     logs = { logPromptSuccess: jest.fn(), logPromptError: jest.fn() } as never;
     users = {
-      findById: jest
-        .fn()
-        .mockResolvedValue({
-          id: 42,
-          email: 'a@b.c',
-          fullName: 'A B',
-          currentStreak: 0,
-          lastStreakDate: null,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          password: 'hash',
-        }),
+      findById: jest.fn().mockResolvedValue({
+        id: 42,
+        email: 'a@b.c',
+        fullName: 'A B',
+        currentStreak: 0,
+        lastStreakDate: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+        password: 'hash',
+      }),
     } as never;
 
     const insertedReading = {
@@ -92,21 +90,13 @@ describe('ReadingsService', () => {
           }),
         }),
       }),
-      update: jest
-        .fn()
-        .mockReturnValue({
-          set: jest
-            .fn()
-            .mockReturnValue({
-              where: jest
-                .fn()
-                .mockReturnValue({
-                  returning: jest
-                    .fn()
-                    .mockResolvedValue([{ ...insertedReading, status: 'completed' }]),
-                }),
-            }),
+      update: jest.fn().mockReturnValue({
+        set: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            returning: jest.fn().mockResolvedValue([{ ...insertedReading, status: 'completed' }]),
+          }),
         }),
+      }),
       delete: jest.fn(),
     };
   });
@@ -129,15 +119,11 @@ describe('ReadingsService', () => {
           }),
         }),
         update: jest.fn().mockReturnValue({
-          set: jest
-            .fn()
-            .mockReturnValue({
-              where: jest
-                .fn()
-                .mockReturnValue({
-                  returning: jest.fn().mockResolvedValue([{ ...returned, status: 'completed' }]),
-                }),
+          set: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              returning: jest.fn().mockResolvedValue([{ ...returned, status: 'completed' }]),
             }),
+          }),
         }),
         delete: jest.fn(),
       };
@@ -360,17 +346,13 @@ describe('ReadingsService', () => {
       };
       const dbOther = {
         ...db,
-        select: jest
-          .fn()
-          .mockReturnValue({
-            from: jest
+        select: jest.fn().mockReturnValue({
+          from: jest.fn().mockReturnValue({
+            where: jest
               .fn()
-              .mockReturnValue({
-                where: jest
-                  .fn()
-                  .mockReturnValue({ limit: jest.fn().mockResolvedValue([otherUserReading]) }),
-              }),
+              .mockReturnValue({ limit: jest.fn().mockResolvedValue([otherUserReading]) }),
           }),
+        }),
       };
       service = await buildModuleWithDb(dbOther);
       await expect(service.findById(1, 42)).rejects.toBeInstanceOf(AppHttpException);
@@ -385,6 +367,179 @@ describe('ReadingsService', () => {
       expect(result.score).toBe(85);
       expect(result.passed).toBe(true);
       expect(db.update).toHaveBeenCalled();
+    });
+
+    it('persists the user response and the AI feedback on the reading row', async () => {
+      // The schema previously only stored score/passed. We now persist the
+      // user's written summary AND the AI feedback so the mobile client can
+      // re-display both later from a plain GET /readings/{id} without making
+      // the client re-call the LLM.
+      parser.parseEvaluation.mockReturnValue({
+        score: 88,
+        passed: true,
+        feedback: 'Captured the main idea accurately.',
+      });
+      service = await buildModuleWithDb(db);
+      await service.evaluate(7, 42, { userResponse: 'The robots help clean oceans.' });
+
+      // The SQL SET must include userResponse + feedback so the live row
+      // has them after evaluation completes.
+      const setArg =
+        (db.update as jest.Mock).mock.results[0]?.value?.set?.mock?.calls?.[0]?.[0] ?? {};
+      expect(setArg).toMatchObject({
+        score: 88,
+        passed: true,
+        status: 'completed',
+        userResponse: 'The robots help clean oceans.',
+        feedback: 'Captured the main idea accurately.',
+      });
+      expect(setArg).toHaveProperty('updatedAt');
+    });
+  });
+
+  describe('findById after evaluation', () => {
+    it('returns the persisted userResponse and feedback of an evaluated reading', async () => {
+      // After evaluation completes, GET /readings/{id} must include the
+      // stored userResponse and feedback so the app can render history.
+      parser.parseEvaluation.mockReturnValue({
+        score: 92,
+        passed: true,
+        feedback: 'Excellent summary.',
+      });
+      let capturedUpdateSet: Record<string, unknown> = {};
+      const dbWithCapture = {
+        insert: jest.fn().mockReturnValue({
+          values: jest.fn().mockReturnValue({
+            returning: jest.fn().mockResolvedValue([
+              {
+                id: 8,
+                userId: 42,
+                title: 't',
+                description: 'd',
+                content: 'c',
+                category: 'technology',
+                difficulty: 'easy',
+                wordCount: 80,
+                status: 'completed',
+                score: 92,
+                passed: true,
+                userResponse: 'My detailed summary.',
+                feedback: 'Excellent summary.',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                deletedAt: null,
+              },
+            ]),
+          }),
+        }),
+        select: jest.fn().mockReturnValue({
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue([
+                // Initial findById() returns a pending reading so the
+                // already-evaluated guard in evaluate() does not fire.
+                // The subsequent returning() inside update() returns the
+                // completed shape.
+                {
+                  id: 8,
+                  userId: 42,
+                  title: 't',
+                  description: 'd',
+                  content: 'c',
+                  category: 'technology',
+                  difficulty: 'easy',
+                  wordCount: 80,
+                  status: 'pending',
+                  score: null,
+                  passed: null,
+                  userResponse: null,
+                  feedback: null,
+                  createdAt: new Date(),
+                  updatedAt: null,
+                  deletedAt: null,
+                },
+                {
+                  id: 8,
+                  userId: 42,
+                  title: 't',
+                  description: 'd',
+                  content: 'c',
+                  category: 'technology',
+                  difficulty: 'easy',
+                  wordCount: 80,
+                  status: 'completed',
+                  score: 92,
+                  passed: true,
+                  userResponse: 'My detailed summary.',
+                  feedback: 'Excellent summary.',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  deletedAt: null,
+                },
+              ]),
+            }),
+          }),
+        }),
+        update: jest.fn().mockImplementation(() => {
+          const api: any = {
+            set: jest.fn((s) => {
+              capturedUpdateSet = s;
+              return api;
+            }),
+            where: jest.fn(() => ({
+              returning: jest.fn().mockResolvedValue([
+                {
+                  id: 8,
+                  userId: 42,
+                  title: 't',
+                  description: 'd',
+                  content: 'c',
+                  category: 'technology',
+                  difficulty: 'easy',
+                  wordCount: 80,
+                  status: 'completed',
+                  score: 92,
+                  passed: true,
+                  userResponse: 'My detailed summary.',
+                  feedback: 'Excellent summary.',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  deletedAt: null,
+                },
+              ]),
+            })),
+          };
+          return api;
+        }),
+        delete: jest.fn(),
+      };
+      // The existing top-level `db` mock is a different shape (see
+      // buildModuleWithDb). We only need evaluate here, not the full
+      // service surface, so replace the binding at the DB token.
+      const moduleRef = await Test.createTestingModule({
+        providers: [
+          ReadingsService,
+          { provide: AIProviderFactory, useValue: factory },
+          { provide: PromptBuilderService, useValue: promptGen },
+          { provide: AiResponseParserService, useValue: parser },
+          { provide: PromptLogService, useValue: logs },
+          { provide: UsersService, useValue: users },
+          { provide: DRIZZLE, useValue: dbWithCapture as unknown as DrizzleDb },
+        ],
+      }).compile();
+      const localService = moduleRef.get(ReadingsService);
+
+      await localService.evaluate(8, 42, { userResponse: 'My detailed summary.' });
+
+      // The persisted SET contract: the SQL store got a row with feedback
+      // and userResponse populated.
+      expect(capturedUpdateSet).toMatchObject({
+        score: 92,
+        passed: true,
+        status: 'completed',
+        userResponse: 'My detailed summary.',
+        feedback: 'Excellent summary.',
+      });
     });
   });
 });

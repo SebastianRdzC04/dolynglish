@@ -224,6 +224,14 @@ export class ReadingDto {
   feedback!: string | null;
 
   @ApiProperty({
+    example: null,
+    nullable: true,
+    description:
+      "User's written summary (set when the user evaluates the reading). Null until evaluation.",
+  })
+  userResponse!: string | null;
+
+  @ApiProperty({
     example: false,
     nullable: true,
     description: 'true if score >= 80. null until evaluation.',
@@ -260,6 +268,12 @@ export class EvaluationResultDto {
     description: 'AI-generated feedback for the user',
   })
   feedback!: string;
+
+  @ApiProperty({
+    example: 'TypeScript adoption grew because of better tooling and gradual typing.',
+    description: 'Echo of the user response that was evaluated (for app convenience).',
+  })
+  userResponse!: string;
 
   @ApiProperty({ type: () => ReadingDto })
   reading!: ReadingDto;

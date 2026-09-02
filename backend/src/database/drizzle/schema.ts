@@ -41,24 +41,21 @@ export const users = pgTable(
   }),
 );
 
-export const authAccessTokens = pgTable(
-  'auth_access_tokens',
-  {
-    id: serial('id').primaryKey(),
-    tokenableId: integer('tokenable_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    type: varchar('type', { length: 255 }).notNull(),
-    name: varchar('name', { length: 255 }),
-    hash: varchar('hash', { length: 255 }).notNull(),
-    abilities: text('abilities').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: false }),
-    updatedAt: timestamp('updated_at', { withTimezone: false }),
-    lastUsedAt: timestamp('last_used_at', { withTimezone: false }),
-    expiresAt: timestamp('expires_at', { withTimezone: false }),
-    deletedAt: timestamp('deleted_at', { withTimezone: false }),
-  },
-);
+export const authAccessTokens = pgTable('auth_access_tokens', {
+  id: serial('id').primaryKey(),
+  tokenableId: integer('tokenable_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  hash: varchar('hash', { length: 255 }).notNull(),
+  abilities: text('abilities').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: false }),
+  updatedAt: timestamp('updated_at', { withTimezone: false }),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: false }),
+  expiresAt: timestamp('expires_at', { withTimezone: false }),
+  deletedAt: timestamp('deleted_at', { withTimezone: false }),
+});
 
 export const readings = pgTable(
   'readings',
@@ -76,6 +73,8 @@ export const readings = pgTable(
     status: varchar('status', { length: 20 }).notNull().default('pending'),
     score: integer('score'),
     passed: boolean('passed'),
+    userResponse: text('user_response'),
+    feedback: text('feedback'),
     createdAt: timestamp('created_at', { withTimezone: false }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: false }),
     deletedAt: timestamp('deleted_at', { withTimezone: false }),
