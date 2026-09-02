@@ -1,10 +1,10 @@
-import {
-  PromptGeneratorService,
-  type DifficultyLevel,
-  type GeneratedPrompt,
-  type RandomPromptParams,
-  type TextSize,
-} from './prompt-generator.service';
+import { PromptBuilderService } from './prompt-builder.service';
+import type {
+  DifficultyLevel,
+  GeneratedPrompt,
+  RandomPromptParams,
+  TextSize,
+} from './catalog.types';
 
 /**
  * Tests for the prompt-generation service. These are the *most important*
@@ -17,11 +17,11 @@ import {
  * prompt that injected per-difficulty vocabulary and grammar guidelines
  * plus the text length in words. These tests pin the regenerated contract.
  */
-describe('PromptGeneratorService', () => {
-  let service: PromptGeneratorService;
+describe('PromptBuilderService', () => {
+  let service: PromptBuilderService;
 
   beforeEach(() => {
-    service = new PromptGeneratorService();
+    service = new PromptBuilderService();
   });
 
   /**

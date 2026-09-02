@@ -2,9 +2,10 @@ import { Test } from '@nestjs/testing';
 import { AppHttpException } from '../../common/errors/app-http.exception';
 import { ReadingsService } from './readings.service';
 import { AIProviderFactory } from '../ia/providers/ai-provider.factory';
-import { PromptGeneratorService, type RandomPromptParams } from './prompt-generator.service';
+import { PromptBuilderService } from './prompt-generation';
+import type { RandomPromptParams } from './prompt-generation/catalog.types';
 import { AiResponseParserService } from './ai-response-parser.service';
-import { PromptLogService } from './prompt-log.service';
+import { PromptLogService } from './prompt-logs';
 import { UsersService } from '../users/users.service';
 import { DRIZZLE } from '../../database/database.tokens';
 import type { DrizzleDb } from '../../database/database.module';
@@ -12,9 +13,9 @@ import type { DrizzleDb } from '../../database/database.module';
 describe('ReadingsService', () => {
   let service: ReadingsService;
   let factory: jest.Mocked<Pick<AIProviderFactory, 'getFullResponse'>>;
-  let promptGen: jest.Mocked<Pick<PromptGeneratorService, 'buildPrompt' | 'generateRandomParams'>>;
+  let promptGen: jest.Mocked<Pick<PromptBuilderService, 'buildPrompt' | 'generateRandomParams'>>;
   let parser: jest.Mocked<Pick<AiResponseParserService, 'parseGeneratedText' | 'parseEvaluation'>>;
-  let logs: jest.Mocked<Pick<PromptLogService, 'logAuthEvent' | 'logPromptSuccess' | 'logPromptError'>>;
+  let logs: jest.Mocked<Pick<PromptLogService, 'logPromptSuccess' | 'logPromptError'>>;
   let users: jest.Mocked<Pick<UsersService, 'findById'>>;
   let db: { insert: jest.Mock; select: jest.Mock; update: jest.Mock; delete: jest.Mock };
 
@@ -23,7 +24,7 @@ describe('ReadingsService', () => {
       providers: [
         ReadingsService,
         { provide: AIProviderFactory, useValue: factory },
-        { provide: PromptGeneratorService, useValue: promptGen },
+        { provide: PromptBuilderService, useValue: promptGen },
         { provide: AiResponseParserService, useValue: parser },
         { provide: PromptLogService, useValue: logs },
         { provide: UsersService, useValue: users },
@@ -43,16 +44,44 @@ describe('ReadingsService', () => {
       parseGeneratedText: jest.fn(),
       parseEvaluation: jest.fn(),
     } as never;
-    logs = { logAuthEvent: jest.fn(), logPromptSuccess: jest.fn(), logPromptError: jest.fn() } as never;
-    users = { findById: jest.fn().mockResolvedValue({ id: 42, email: 'a@b.c', fullName: 'A B', currentStreak: 0, lastStreakDate: null, createdAt: new Date(), updatedAt: null, deletedAt: null, password: 'hash' }) } as never;
+    logs = { logPromptSuccess: jest.fn(), logPromptError: jest.fn() } as never;
+    users = {
+      findById: jest
+        .fn()
+        .mockResolvedValue({
+          id: 42,
+          email: 'a@b.c',
+          fullName: 'A B',
+          currentStreak: 0,
+          lastStreakDate: null,
+          createdAt: new Date(),
+          updatedAt: null,
+          deletedAt: null,
+          password: 'hash',
+        }),
+    } as never;
 
     const insertedReading = {
-      id: 1, userId: 42, status: 'pending', title: 'X', description: 'X', content: 'X',
-      category: 'technology' as const, difficulty: 'easy' as const, wordCount: 100,
-      score: null, passed: null,
-      createdAt: new Date(), updatedAt: null, deletedAt: null,
+      id: 1,
+      userId: 42,
+      status: 'pending',
+      title: 'X',
+      description: 'X',
+      content: 'X',
+      category: 'technology' as const,
+      difficulty: 'easy' as const,
+      wordCount: 100,
+      score: null,
+      passed: null,
+      createdAt: new Date(),
+      updatedAt: null,
+      deletedAt: null,
     };
-    const insertChain = { values: jest.fn().mockReturnValue({ returning: jest.fn().mockResolvedValue([insertedReading]) }) };
+    const insertChain = {
+      values: jest
+        .fn()
+        .mockReturnValue({ returning: jest.fn().mockResolvedValue([insertedReading]) }),
+    };
     db = {
       insert: jest.fn().mockReturnValue(insertChain),
       select: jest.fn().mockReturnValue({
@@ -63,13 +92,29 @@ describe('ReadingsService', () => {
           }),
         }),
       }),
-      update: jest.fn().mockReturnValue({ set: jest.fn().mockReturnValue({ where: jest.fn().mockReturnValue({ returning: jest.fn().mockResolvedValue([{ ...insertedReading, status: 'completed' }]) }) }) }),
+      update: jest
+        .fn()
+        .mockReturnValue({
+          set: jest
+            .fn()
+            .mockReturnValue({
+              where: jest
+                .fn()
+                .mockReturnValue({
+                  returning: jest
+                    .fn()
+                    .mockResolvedValue([{ ...insertedReading, status: 'completed' }]),
+                }),
+            }),
+        }),
       delete: jest.fn(),
     };
   });
 
   describe('generate', () => {
-    const makeDbReturning = (returned: Record<string, unknown>): { insert: jest.Mock; select: jest.Mock; update: jest.Mock; delete: jest.Mock } => {
+    const makeDbReturning = (
+      returned: Record<string, unknown>,
+    ): { insert: jest.Mock; select: jest.Mock; update: jest.Mock; delete: jest.Mock } => {
       const insertChain = {
         values: jest.fn().mockReturnValue({ returning: jest.fn().mockResolvedValue([returned]) }),
       };
@@ -84,7 +129,15 @@ describe('ReadingsService', () => {
           }),
         }),
         update: jest.fn().mockReturnValue({
-          set: jest.fn().mockReturnValue({ where: jest.fn().mockReturnValue({ returning: jest.fn().mockResolvedValue([{ ...returned, status: 'completed' }]) }) }),
+          set: jest
+            .fn()
+            .mockReturnValue({
+              where: jest
+                .fn()
+                .mockReturnValue({
+                  returning: jest.fn().mockResolvedValue([{ ...returned, status: 'completed' }]),
+                }),
+            }),
         }),
         delete: jest.fn(),
       };
@@ -102,14 +155,29 @@ describe('ReadingsService', () => {
       };
       promptGen.generateRandomParams.mockReturnValue(params);
       promptGen.buildPrompt.mockReturnValue({
-        systemPrompt: 'sys', userPrompt: 'usr', seed: 'seed-1', params,
+        systemPrompt: 'sys',
+        userPrompt: 'usr',
+        seed: 'seed-1',
+        params,
       });
-      factory.getFullResponse.mockResolvedValue('{"title":"T","description":"D","content":"C","category":"history","difficulty":"medium"}');
+      factory.getFullResponse.mockResolvedValue(
+        '{"title":"T","description":"D","content":"C","category":"history","difficulty":"medium"}',
+      );
       const returned = {
-        id: 1, userId: 42, status: 'pending',
-        title: 'T', description: 'D', content: 'C', category: 'history' as const, difficulty: 'medium' as const,
-        wordCount: 1, score: null, passed: null,
-        createdAt: new Date(), updatedAt: null, deletedAt: null,
+        id: 1,
+        userId: 42,
+        status: 'pending',
+        title: 'T',
+        description: 'D',
+        content: 'C',
+        category: 'history' as const,
+        difficulty: 'medium' as const,
+        wordCount: 1,
+        score: null,
+        passed: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
       };
       parser.parseGeneratedText.mockReturnValue(returned);
       const localDb = makeDbReturning(returned);
@@ -153,10 +221,20 @@ describe('ReadingsService', () => {
         '{"title":"T","description":"D","content":"C","category":"programming","difficulty":"hard"}',
       );
       const returned = {
-        id: 2, userId: 42, status: 'pending',
-        title: 'T', description: 'D', content: 'C', category: 'programming' as const, difficulty: 'hard' as const,
-        wordCount: 1, score: null, passed: null,
-        createdAt: new Date(), updatedAt: null, deletedAt: null,
+        id: 2,
+        userId: 42,
+        status: 'pending',
+        title: 'T',
+        description: 'D',
+        content: 'C',
+        category: 'programming' as const,
+        difficulty: 'hard' as const,
+        wordCount: 1,
+        score: null,
+        passed: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
       };
       parser.parseGeneratedText.mockReturnValue(returned);
       const localDb = makeDbReturning(returned);
@@ -199,10 +277,20 @@ describe('ReadingsService', () => {
         '{"title":"T","description":"D","content":"C","category":"culture","difficulty":"medium"}',
       );
       const returned = {
-        id: 3, userId: 42, status: 'pending',
-        title: 'T', description: 'D', content: 'C', category: 'culture' as const, difficulty: 'medium' as const,
-        wordCount: 1, score: null, passed: null,
-        createdAt: new Date(), updatedAt: null, deletedAt: null,
+        id: 3,
+        userId: 42,
+        status: 'pending',
+        title: 'T',
+        description: 'D',
+        content: 'C',
+        category: 'culture' as const,
+        difficulty: 'medium' as const,
+        wordCount: 1,
+        score: null,
+        passed: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
       };
       parser.parseGeneratedText.mockReturnValue(returned);
       const localDb = makeDbReturning(returned);
@@ -221,10 +309,17 @@ describe('ReadingsService', () => {
 
     it('throws BadRequestException if AI returns no usable JSON', async () => {
       promptGen.buildPrompt.mockReturnValue({
-        systemPrompt: 'sys', userPrompt: 'usr', seed: 's', params: {
-          category: 'history', difficulty: 'medium', size: 'medium',
-          subcategories: ['Subcategory test'], contentType: 'interesting_discovery',
-          perspective: 'causes', uniqueFocusElement: 'its impact on daily life',
+        systemPrompt: 'sys',
+        userPrompt: 'usr',
+        seed: 's',
+        params: {
+          category: 'history',
+          difficulty: 'medium',
+          size: 'medium',
+          subcategories: ['Subcategory test'],
+          contentType: 'interesting_discovery',
+          perspective: 'causes',
+          uniqueFocusElement: 'its impact on daily life',
         },
       });
       factory.getFullResponse.mockResolvedValue('no json here');
@@ -247,10 +342,35 @@ describe('ReadingsService', () => {
     });
 
     it('throws NotFoundException if reading belongs to a different user', async () => {
-      const otherUserReading = { id: 1, userId: 99, status: 'pending', title: 'X', description: 'X', content: 'X', category: 'technology' as const, difficulty: 'easy' as const, wordCount: 100, score: null, passed: null, createdAt: new Date(), updatedAt: null, deletedAt: null };
+      const otherUserReading = {
+        id: 1,
+        userId: 99,
+        status: 'pending',
+        title: 'X',
+        description: 'X',
+        content: 'X',
+        category: 'technology' as const,
+        difficulty: 'easy' as const,
+        wordCount: 100,
+        score: null,
+        passed: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        deletedAt: null,
+      };
       const dbOther = {
         ...db,
-        select: jest.fn().mockReturnValue({ from: jest.fn().mockReturnValue({ where: jest.fn().mockReturnValue({ limit: jest.fn().mockResolvedValue([otherUserReading]) }) }) }),
+        select: jest
+          .fn()
+          .mockReturnValue({
+            from: jest
+              .fn()
+              .mockReturnValue({
+                where: jest
+                  .fn()
+                  .mockReturnValue({ limit: jest.fn().mockResolvedValue([otherUserReading]) }),
+              }),
+          }),
       };
       service = await buildModuleWithDb(dbOther);
       await expect(service.findById(1, 42)).rejects.toBeInstanceOf(AppHttpException);
