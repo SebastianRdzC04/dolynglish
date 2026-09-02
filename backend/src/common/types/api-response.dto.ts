@@ -1,22 +1,33 @@
 import { ApiProperty, type ApiPropertyOptions } from '@nestjs/swagger';
 
-/** Common envelope used by every successful (HTTP 2xx) response. */
-export class ApiSuccessEnvelopeDto<TData> {
+/** Common envelope used by every successful (HTTP 2xx) response.
+ *
+ * The `data` field type is intentionally loose (`object`). Per-endpoint
+ * documentation overrides the inline `data` schema with a `$ref` to the
+ * actual model (see `api-envelope.decorators.ts`). Using a generic
+ * `TData` here triggers NestJS's circular-dependency detection because
+ * the schema generator cannot resolve the concrete type, so we declare
+ * it as `object` directly. */
+export class ApiSuccessEnvelopeDto {
   @ApiProperty({
     example: 'Reading generated successfully',
     description: 'Human-readable status message',
   })
   message!: string;
 
-  @ApiProperty({ description: 'The shape of the resource (or list of resources) returned.' })
-  data!: TData;
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true,
+    description: 'The shape of the resource (or list of resources) returned.',
+  })
+  data!: object;
 
   @ApiProperty({
-    example: null,
     nullable: true,
-    description: 'Always null on success. Populated on error.',
+    description:
+      'Always null on success. When populated, see ApiErrorDto for the shape (error envelope is reused from /common/errors).',
   })
-  error!: null;
+  error!: ApiErrorDto | null;
 }
 
 /**

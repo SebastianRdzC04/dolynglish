@@ -28,6 +28,9 @@ interface OpenApiSchemaObject {
   properties?: Record<string, OpenApiSchemaObject>;
   additionalProperties?: unknown;
   nullable?: boolean;
+  allOf?: OpenApiSchemaObject[];
+  oneOf?: OpenApiSchemaObject[];
+  anyOf?: OpenApiSchemaObject[];
   example?: unknown;
   description?: string;
 }
@@ -123,28 +126,55 @@ describe('every endpoint documents its success response shape', () => {
    * A success schema is "real" if it is:
    *   - a $ref to a documented component, OR
    *   - an inline object with at least one property, OR
-   *   - an array of either of the above.
+   *   - an array of either of the above, OR
+   *   - an allOf/oneOf/anyOf whose members collectively carry a real schema.
    *
    * Empty `{}` schemas, schemas without a $ref AND without properties, or
    * schemas that Scalar would render as "Nobody" all fail this check.
+   *
+   * Since 2026-09-01 this also accepts the envelope pattern
+   * (`allOf: [{$ref: ApiSuccessEnvelopeDto}, {properties: {data: ...}}]`)
+   * introduced by `feat(docs): document { message, data, error } envelope`.
    */
   const hasRealSchema = (schema: OpenApiSchemaObject | undefined): boolean => {
     if (!schema) return false;
     if (schema.$ref && schema.$ref.length > 0) return true;
+    if (schema.allOf?.length) {
+      return schema.allOf.every((member) => hasRealSchema(member));
+    }
+    if (schema.oneOf?.length || schema.anyOf?.length) {
+      const variants = schema.oneOf ?? schema.anyOf ?? [];
+      return variants.some((member) => hasRealSchema(member));
+    }
     if (schema.type === 'array') {
       return hasRealSchema(schema.items);
     }
     if (schema.type === 'object' || schema.properties) {
       return Object.keys(schema.properties ?? {}).length > 0;
     }
-    if (schema.type === 'string' || schema.type === 'number' || schema.type === 'boolean' || schema.type === 'integer') {
+    if (
+      schema.type === 'string' ||
+      schema.type === 'number' ||
+      schema.type === 'boolean' ||
+      schema.type === 'integer'
+    ) {
       return true;
     }
     return false;
   };
 
-  const collectSuccessResponses = (): Array<{ method: string; path: string; status: string; response: OpenApiResponse }> => {
-    const collected: Array<{ method: string; path: string; status: string; response: OpenApiResponse }> = [];
+  const collectSuccessResponses = (): Array<{
+    method: string;
+    path: string;
+    status: string;
+    response: OpenApiResponse;
+  }> => {
+    const collected: Array<{
+      method: string;
+      path: string;
+      status: string;
+      response: OpenApiResponse;
+    }> = [];
     for (const [path, methods] of Object.entries(document.paths ?? {})) {
       for (const [method, op] of Object.entries(methods ?? {})) {
         if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) continue;
@@ -166,7 +196,9 @@ describe('every endpoint documents its success response shape', () => {
     for (const { method, path, status, response } of successResponses) {
       const jsonSchema = response.content?.['application/json']?.schema;
       if (!hasRealSchema(jsonSchema)) {
-        offenders.push(`${method} ${path} → ${status} (description: "${response.description ?? ''}")`);
+        offenders.push(
+          `${method} ${path} → ${status} (description: "${response.description ?? ''}")`,
+        );
       }
     }
 
@@ -210,21 +242,25 @@ describe('every endpoint documents its success response shape', () => {
     }
   });
 
-  it('live OpenAPI: /api/v1/openapi.json contains at least one /api/v1/auth/register response with a $ref', async () => {
+  it('live OpenAPI: /api/v1/openapi.json carries an envelope schema for POST /api/v1/auth/register', async () => {
     const response = await supertest(app.getHttpServer()).get('/api/v1/openapi.json').expect(200);
     const live = response.body as OpenApiDocument;
     const registerPost = live.paths?.['/api/v1/auth/register']?.post;
     const created = registerPost?.responses?.['201'];
     expect(created).toBeDefined();
     const schema = created?.content?.['application/json']?.schema;
+    // Since 2026-09-01 every 2xx response uses the allOf envelope pattern.
     expect(schema).toBeDefined();
-    expect(schema!.$ref ?? schema!.type).toBeTruthy();
+    expect(hasRealSchema(schema)).toBe(true);
   });
 });
 
 function collectRefs(schema: OpenApiSchemaObject): string[] {
   const refs: string[] = [];
   if (schema.$ref) refs.push(schema.$ref.replace('#/components/schemas/', ''));
+  if (schema.allOf) for (const member of schema.allOf) refs.push(...collectRefs(member));
+  if (schema.oneOf) for (const member of schema.oneOf) refs.push(...collectRefs(member));
+  if (schema.anyOf) for (const member of schema.anyOf) refs.push(...collectRefs(member));
   if (schema.items) refs.push(...collectRefs(schema.items));
   if (schema.properties) {
     for (const prop of Object.values(schema.properties)) {

@@ -3,8 +3,6 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -15,6 +13,11 @@ import {
   AuthTokensDto,
   AuthUserViewDto,
 } from '../../common/types/api-response.dto';
+import {
+  ApiCreatedResponseOf,
+  ApiOkResponseEmpty,
+  ApiOkResponseOf,
+} from '../../common/types/api-envelope.decorators';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -32,11 +35,7 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new account and return access + refresh tokens' })
-  @ApiCreatedResponse({
-    description:
-      'User registered. Returns the public user profile plus an access/refresh token pair.',
-    type: AuthResponseDto,
-  })
+  @ApiCreatedResponseOf(AuthResponseDto)
   @ApiConflictResponse({ description: 'Email already in use', type: ApiErrorDto })
   @ApiBadRequestResponse({ description: 'Validation failed', type: ApiErrorDto })
   async register(@Body() dto: RegisterDto): Promise<ApiResponse<AuthResponseDto>> {
@@ -48,10 +47,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate with email + password' })
-  @ApiOkResponse({
-    description: 'Returns the user profile plus a fresh access/refresh token pair.',
-    type: AuthResponseDto,
-  })
+  @ApiOkResponseOf(AuthResponseDto)
   @ApiUnauthorizedResponse({ description: 'Invalid credentials', type: ApiErrorDto })
   @ApiBadRequestResponse({ description: 'Validation failed', type: ApiErrorDto })
   async login(@Body() dto: LoginDto): Promise<ApiResponse<AuthResponseDto>> {
@@ -63,10 +59,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Exchange a refresh token for a new access + refresh pair' })
-  @ApiOkResponse({
-    description: 'Returns a fresh access/refresh token pair.',
-    type: AuthTokensDto,
-  })
+  @ApiOkResponseOf(AuthTokensDto)
   @ApiUnauthorizedResponse({ description: 'Invalid or expired refresh token', type: ApiErrorDto })
   async refresh(@Body() dto: RefreshTokenDto): Promise<ApiResponse<AuthTokensDto>> {
     const tokens = await this.auth.refresh(dto.refreshToken);
@@ -77,7 +70,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Logout the current user (client should drop the tokens)' })
-  @ApiBearerAuth('access-token')
+  @ApiOkResponseEmpty()
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async logout(@CurrentUser() current: AuthUser): Promise<ApiResponse<null>> {
     await this.auth.logout(current.id);
@@ -87,7 +80,7 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @Get('me')
   @ApiOperation({ summary: 'Return the current user’s public profile' })
-  @ApiOkResponse({ description: 'The current user’s public profile.', type: AuthUserViewDto })
+  @ApiOkResponseOf(AuthUserViewDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async me(@CurrentUser() current: AuthUser): Promise<ApiResponse<AuthUserViewDto>> {
     const user = await this.auth.me(current.id);

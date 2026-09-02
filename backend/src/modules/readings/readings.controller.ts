@@ -8,14 +8,11 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -27,6 +24,12 @@ import {
   ReadingDto,
   ReadingOptionsDto,
 } from '../../common/types/api-response.dto';
+import {
+  ApiCreatedResponseOf,
+  ApiOkResponseEmpty,
+  ApiOkResponseOf,
+  ApiOkResponseOfArray,
+} from '../../common/types/api-envelope.decorators';
 import { ReadingsService } from './readings.service';
 import { CreateExplanationDto, EvaluateReadingDto, GenerateReadingDto } from './dto/readings.dto';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
@@ -40,7 +43,7 @@ export class ReadingsController {
 
   @Get('options')
   @ApiOperation({ summary: 'Get generation options (categories, difficulties, cefr)' })
-  @ApiOkResponse({ description: 'Available options', type: ReadingOptionsDto })
+  @ApiOkResponseOf(ReadingOptionsDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async getOptions(): Promise<ApiResponse<ReadingOptionsDto>> {
     return apiOk(
@@ -52,7 +55,7 @@ export class ReadingsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Generate a new reading using the active AI provider' })
-  @ApiCreatedResponse({ description: 'The newly created reading', type: ReadingDto })
+  @ApiCreatedResponseOf(ReadingDto)
   @ApiBadRequestResponse({
     description: 'Pending limit reached, AI provider failed, or validation error',
     type: ApiErrorDto,
@@ -68,7 +71,7 @@ export class ReadingsController {
 
   @Get('pending')
   @ApiOperation({ summary: 'List the user’s pending readings' })
-  @ApiOkResponse({ description: 'Array of pending readings', type: [ReadingDto] })
+  @ApiOkResponseOfArray(ReadingDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async listPending(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
     const list = await this.readings.listPending(current.id);
@@ -77,7 +80,7 @@ export class ReadingsController {
 
   @Get('completed')
   @ApiOperation({ summary: 'List the user’s completed readings' })
-  @ApiOkResponse({ description: 'Array of completed readings', type: [ReadingDto] })
+  @ApiOkResponseOfArray(ReadingDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async listCompleted(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
     const list = await this.readings.listCompleted(current.id);
@@ -86,7 +89,7 @@ export class ReadingsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Fetch a single reading by id' })
-  @ApiOkResponse({ description: 'The reading', type: ReadingDto })
+  @ApiOkResponseOf(ReadingDto)
   @ApiNotFoundResponse({
     description: 'Reading not found or owned by another user',
     type: ApiErrorDto,
@@ -102,7 +105,7 @@ export class ReadingsController {
 
   @Post(':id/evaluate')
   @ApiOperation({ summary: 'Evaluate the user’s summary of a reading' })
-  @ApiOkResponse({ description: 'Score + feedback + updated reading', type: EvaluationResultDto })
+  @ApiOkResponseOf(EvaluationResultDto)
   @ApiBadRequestResponse({
     description: 'Validation error or reading already evaluated',
     type: ApiErrorDto,
@@ -123,7 +126,7 @@ export class ReadingsController {
 
   @Post(':id/explanations')
   @ApiOperation({ summary: 'Explain a word in the context of a reading' })
-  @ApiOkResponse({ description: 'Explanation + reading', type: ExplanationResultDto })
+  @ApiOkResponseOf(ExplanationResultDto)
   @ApiBadRequestResponse({ description: 'Validation error', type: ApiErrorDto })
   @ApiNotFoundResponse({ description: 'Reading not found', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
@@ -139,6 +142,7 @@ export class ReadingsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete a reading' })
+  @ApiOkResponseEmpty()
   @ApiNotFoundResponse({ description: 'Reading not found', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async remove(
@@ -149,6 +153,3 @@ export class ReadingsController {
     return apiOk('Deleted', null);
   }
 }
-
-// Re-export to satisfy tsc when reading a partial file
-void Query;
