@@ -269,7 +269,15 @@ Evaluate how well the user understood the main idea of the text.`;
     if (!updated) {
       throw new Error('Update returned no rows');
     }
-    return { ...result, reading: updated };
+    // Spread the DB row last so anything the column write pinned (userResponse,
+    // feedback, updatedAt, status='completed') overrides matching keys.
+    return {
+      score: result.score,
+      passed: result.passed,
+      feedback: result.feedback,
+      userResponse: dto.userResponse,
+      reading: updated,
+    };
   }
 
   async explain(

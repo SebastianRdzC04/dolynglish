@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-export type TextCategory = 'technology' | 'history' | 'education' | 'programming' | 'culture' | 'pop_culture';
+export type TextCategory =
+  'technology' | 'history' | 'education' | 'programming' | 'culture' | 'pop_culture';
 export type TextDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface GeneratedText {
@@ -15,6 +16,14 @@ export interface EvaluationResult {
   score: number;
   passed: boolean;
   feedback: string;
+  /**
+   * The user response that was evaluated. Populated by readings.service
+   * before persisting — the AI parser does not return it (it only sees
+   * the input as part of the prompt, not as a structured output field).
+   * Surfacing it on the interface lets the controller echo it back to the
+   * client in the same EvaluationResultDto response.
+   */
+  userResponse?: string;
 }
 
 const ALLOWED_CATEGORIES: TextCategory[] = [
@@ -47,7 +56,9 @@ export class AiResponseParserService {
     const category = categoryNormalized as TextCategory;
 
     const difficultyRaw = String(parsed.difficulty ?? '').toLowerCase();
-    const difficulty: TextDifficulty = ALLOWED_DIFFICULTIES.includes(difficultyRaw as TextDifficulty)
+    const difficulty: TextDifficulty = ALLOWED_DIFFICULTIES.includes(
+      difficultyRaw as TextDifficulty,
+    )
       ? (difficultyRaw as TextDifficulty)
       : 'medium';
 
@@ -77,7 +88,10 @@ export class AiResponseParserService {
    * Brace-matching so we don't truncate early on a string that contains `}`.
    */
   private extractJson(text: string): unknown {
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const cleaned = text
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*/g, '')
+      .trim();
     const firstBrace = cleaned.indexOf('{');
     if (firstBrace === -1) {
       throw new Error('No JSON object found in response');
