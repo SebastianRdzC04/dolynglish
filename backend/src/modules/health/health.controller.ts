@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService, type HealthCheckResult } from '@nestjs/terminus';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HealthCheckResultDto } from '../../common/types/api-response.dto';
+import { ApiOkResponseOf } from '../../common/types/api-envelope.decorators';
 import { Public } from '../../common/decorators/public.decorator';
 import { apiOk, type ApiResponse } from '../../common/types/api-response.type';
 
@@ -12,9 +13,9 @@ export class HealthController {
 
   @Public()
   @Get('live')
-  @HealthCheck()
+  @HealthCheck({ swaggerDocumentation: false })
   @ApiOperation({ summary: 'Liveness probe — process is up' })
-  @ApiOkResponse({ description: 'Liveness probe result', type: HealthCheckResultDto })
+  @ApiOkResponseOf(HealthCheckResultDto)
   live(): Promise<ApiResponse<HealthCheckResult>> {
     return this.health
       .check([() => ({ app: { status: 'up', uptime: process.uptime() } })])
@@ -23,9 +24,9 @@ export class HealthController {
 
   @Public()
   @Get('ready')
-  @HealthCheck()
+  @HealthCheck({ swaggerDocumentation: false })
   @ApiOperation({ summary: 'Readiness probe — DB is reachable' })
-  @ApiOkResponse({ description: 'Readiness probe result', type: HealthCheckResultDto })
+  @ApiOkResponseOf(HealthCheckResultDto)
   ready(): Promise<ApiResponse<HealthCheckResult>> {
     return this.health
       .check([
