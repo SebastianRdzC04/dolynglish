@@ -1,6 +1,13 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { ApiErrorDto } from '../../common/errors/api-error.dto';
+import { ApiOkResponseOf } from '../../common/types/api-envelope.decorators';
 import { UsersService } from './users.service';
 import { StreakQueryDto } from './dto/streak-query.dto';
 import { StreakResponseDto } from './dto/streak-response.dto';
@@ -16,7 +23,7 @@ export class UsersController {
   @Get('streak')
   @ApiOperation({ summary: 'Get the user’s recent streak history' })
   @ApiQuery({ name: 'days', type: StreakQueryDto, required: true })
-  @ApiOkResponse({ description: 'Streak history wrapped in the standard success envelope', type: StreakResponseDto })
+  @ApiOkResponseOf(StreakResponseDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async getStreak(
     @CurrentUser() current: AuthUser,
