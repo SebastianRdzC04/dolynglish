@@ -23,11 +23,11 @@ export class ApiSuccessEnvelopeDto {
   data!: object;
 
   @ApiProperty({
-    type: 'null',
-    example: null,
-    description: 'Always null on success. Populated on error.',
+    nullable: true,
+    description:
+      'Always null on success. When populated, see ApiErrorDto for the shape (error envelope is reused from /common/errors).',
   })
-  error!: null;
+  error!: ApiErrorDto | null;
 }
 
 /**
