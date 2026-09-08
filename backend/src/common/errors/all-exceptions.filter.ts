@@ -30,7 +30,7 @@ interface ValidationErrorEntry {
 function parseValidationMessages(arr: string[]): ValidationErrorEntry[] {
   return arr.map((raw) => {
     const m = VALIDATION_MESSAGE_REGEX.exec(raw);
-    if (m && m[1] && m[2]) {
+    if (m?.[1] && m[2]) {
       return { field: m[1], message: m[2] };
     }
     return { field: '_root', message: raw };
@@ -91,6 +91,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const resp = exception.getResponse();
 
       // 2) Foreign validation errors (raw class-validator shape).
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       if (status === HttpStatus.BAD_REQUEST && this.isValidationResponse(resp)) {
         const code = ErrorCode.VALIDATION_ERROR;
         const meta = ErrorCatalog[code];
@@ -141,9 +142,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return null;
   }
 
-  private tryReadDetailsFromBody(
-    body: string | object,
-  ): Record<string, unknown> | undefined {
+  private tryReadDetailsFromBody(body: string | object): Record<string, unknown> | undefined {
     if (typeof body !== 'object' || body === null) return undefined;
     const d = (body as { details?: unknown }).details;
     if (d && typeof d === 'object') return d as Record<string, unknown>;
@@ -152,16 +151,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private codeFromStatus(status: number): ErrorCode {
     switch (status) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.UNAUTHORIZED:
         return ErrorCode.AUTH_UNAUTHORIZED;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.FORBIDDEN:
         return ErrorCode.RESOURCE_FORBIDDEN;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.NOT_FOUND:
         return ErrorCode.RESOURCE_NOT_FOUND;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.CONFLICT:
         return ErrorCode.AUTH_EMAIL_ALREADY_EXISTS;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.BAD_REQUEST:
         return ErrorCode.VALIDATION_ERROR;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       case HttpStatus.SERVICE_UNAVAILABLE:
         return ErrorCode.SERVICE_UNAVAILABLE;
       default:

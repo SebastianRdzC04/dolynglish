@@ -8,7 +8,6 @@ import { AiResponseParserService } from './ai-response-parser.service';
 import { PromptLogService } from './prompt-logs';
 import { UsersService } from '../users/users.service';
 import { DRIZZLE } from '../../database/database.tokens';
-import type { DrizzleDb } from '../../database/database.module';
 
 describe('ReadingsService', () => {
   let service: ReadingsService;
@@ -28,23 +27,23 @@ describe('ReadingsService', () => {
         { provide: AiResponseParserService, useValue: parser },
         { provide: PromptLogService, useValue: logs },
         { provide: UsersService, useValue: users },
-        { provide: DRIZZLE, useValue: dbMock as unknown as DrizzleDb },
+        { provide: DRIZZLE, useValue: dbMock },
       ],
     }).compile();
     return moduleRef.get(ReadingsService);
   };
 
   beforeEach(() => {
-    factory = { getFullResponse: jest.fn() } as never;
+    factory = { getFullResponse: jest.fn() };
     promptGen = {
       buildPrompt: jest.fn(),
       generateRandomParams: jest.fn(),
-    } as never;
+    };
     parser = {
       parseGeneratedText: jest.fn(),
       parseEvaluation: jest.fn(),
-    } as never;
-    logs = { logPromptSuccess: jest.fn(), logPromptError: jest.fn() } as never;
+    };
+    logs = { logPromptSuccess: jest.fn(), logPromptError: jest.fn() };
     users = {
       findById: jest.fn().mockResolvedValue({
         id: 42,
@@ -57,7 +56,7 @@ describe('ReadingsService', () => {
         deletedAt: null,
         password: 'hash',
       }),
-    } as never;
+    };
 
     const insertedReading = {
       id: 1,
@@ -384,8 +383,7 @@ describe('ReadingsService', () => {
 
       // The SQL SET must include userResponse + feedback so the live row
       // has them after evaluation completes.
-      const setArg =
-        (db.update as jest.Mock).mock.results[0]?.value?.set?.mock?.calls?.[0]?.[0] ?? {};
+      const setArg = db.update.mock.results[0]?.value?.set?.mock?.calls?.[0]?.[0] ?? {};
       expect(setArg).toMatchObject({
         score: 88,
         passed: true,
@@ -524,7 +522,7 @@ describe('ReadingsService', () => {
           { provide: AiResponseParserService, useValue: parser },
           { provide: PromptLogService, useValue: logs },
           { provide: UsersService, useValue: users },
-          { provide: DRIZZLE, useValue: dbWithCapture as unknown as DrizzleDb },
+          { provide: DRIZZLE, useValue: dbWithCapture },
         ],
       }).compile();
       const localService = moduleRef.get(ReadingsService);

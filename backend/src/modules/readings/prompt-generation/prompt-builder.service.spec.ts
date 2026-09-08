@@ -13,9 +13,9 @@ import type {
  * The previous version of this service was effectively a stub — the user
  * prompt was a flat 4-line template that didn't change with the chosen
  * `difficulty`, so the LLM was writing at roughly the same level no matter
- * what the user picked. The AdonisJS version (commit 2916f02) had a richer
- * prompt that injected per-difficulty vocabulary and grammar guidelines
- * plus the text length in words. These tests pin the regenerated contract.
+ * what the user picked. The current contract injects per-difficulty
+ * vocabulary and grammar guidelines plus the text length in words. These
+ * tests pin the regenerated contract.
  */
 describe('PromptBuilderService', () => {
   let service: PromptBuilderService;

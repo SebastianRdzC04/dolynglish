@@ -13,7 +13,8 @@
  *
  * See: src/common/types/api-envelope.decorators.ts for the helpers.
  */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '../src/app.module';
@@ -85,7 +86,7 @@ describe('every success response documents the { message, data, error } envelope
       debug: () => undefined,
       verbose: () => undefined,
       fatal: () => undefined,
-    } as never);
+    });
 
     const env = app.get(AppConfigService);
     app.setGlobalPrefix(env.apiPrefix);
@@ -147,7 +148,7 @@ describe('every success response documents the { message, data, error } envelope
    */
   const referencesEnvelope = (schema: OpenApiSchemaObject | undefined): boolean => {
     if (!schema) return false;
-    if (schema.$ref && schema.$ref.includes(ApiSuccessEnvelopeDto.name)) return true;
+    if (schema.$ref?.includes(ApiSuccessEnvelopeDto.name)) return true;
     if (schema.allOf) return schema.allOf.some((s) => referencesEnvelope(s));
     if (schema.oneOf) return schema.oneOf.some((s) => referencesEnvelope(s));
     if (schema.anyOf) return schema.anyOf.some((s) => referencesEnvelope(s));
@@ -179,7 +180,7 @@ describe('every success response documents the { message, data, error } envelope
   it('envelope components document message as string and error as null', () => {
     const envelope = document.components?.schemas?.[ApiSuccessEnvelopeDto.name];
     expect(envelope).toBeDefined();
-    const props = (envelope?.properties ?? {}) as Record<string, OpenApiSchemaObject>;
+    const props = envelope?.properties ?? {};
     expect(props['message']?.type).toBe('string');
     expect(props['error']?.type).toBe('object');
     expect(props['data']).toBeDefined();

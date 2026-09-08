@@ -45,11 +45,11 @@ export class ReadingsController {
   @ApiOperation({ summary: 'Get generation options (categories, difficulties, cefr)' })
   @ApiOkResponseOf(ReadingOptionsDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
-  async getOptions(): Promise<ApiResponse<ReadingOptionsDto>> {
-    return apiOk(
-      'Generation options',
-      (await this.readings.getOptions()) as unknown as ReadingOptionsDto,
-    );
+  getOptions(): ApiResponse<ReadingOptionsDto> {
+    // The service returns a structurally similar but type-loose shape (id: string
+    // vs the DTO's literal union). Cast to ReadingOptionsDto since this is the
+    // canonical response type for the /readings/options endpoint.
+    return apiOk('Generation options', this.readings.getOptions() as unknown as ReadingOptionsDto);
   }
 
   @Post()
@@ -66,7 +66,7 @@ export class ReadingsController {
     @Body() dto: GenerateReadingDto,
   ): Promise<ApiResponse<ReadingDto>> {
     const reading = await this.readings.generate({ userId: current.id, options: dto });
-    return apiOk<ReadingDto>('Reading generated successfully', reading as unknown as ReadingDto);
+    return apiOk<ReadingDto>('Reading generated successfully', reading);
   }
 
   @Get('pending')
@@ -75,7 +75,7 @@ export class ReadingsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async listPending(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
     const list = await this.readings.listPending(current.id);
-    return apiOk<ReadingDto[]>('Pending readings', list as unknown as ReadingDto[]);
+    return apiOk<ReadingDto[]>('Pending readings', list);
   }
 
   @Get('completed')
@@ -84,7 +84,7 @@ export class ReadingsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
   async listCompleted(@CurrentUser() current: AuthUser): Promise<ApiResponse<ReadingDto[]>> {
     const list = await this.readings.listCompleted(current.id);
-    return apiOk<ReadingDto[]>('Completed readings', list as unknown as ReadingDto[]);
+    return apiOk<ReadingDto[]>('Completed readings', list);
   }
 
   @Get(':id')
@@ -100,7 +100,7 @@ export class ReadingsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ApiResponse<ReadingDto>> {
     const reading = await this.readings.findById(id, current.id);
-    return apiOk<ReadingDto>('Reading', reading as unknown as ReadingDto);
+    return apiOk<ReadingDto>('Reading', reading);
   }
 
   @Post(':id/evaluate')
@@ -136,7 +136,7 @@ export class ReadingsController {
     @Body() dto: CreateExplanationDto,
   ): Promise<ApiResponse<ExplanationResultDto>> {
     const result = await this.readings.explain(id, current.id, dto.word, dto.context);
-    return apiOk<ExplanationResultDto>('Explanation', result as unknown as ExplanationResultDto);
+    return apiOk<ExplanationResultDto>('Explanation', result);
   }
 
   @Delete(':id')

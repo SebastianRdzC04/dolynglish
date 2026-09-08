@@ -36,6 +36,18 @@ const ALLOWED_CATEGORIES: TextCategory[] = [
 ];
 const ALLOWED_DIFFICULTIES: TextDifficulty[] = ['easy', 'medium', 'hard'];
 
+/**
+ * Coerces an unknown JSON value to string, throwing if it's not a primitive.
+ * Prevents `String(obj)` from silently producing '[object Object]' when the
+ * LLM returns a nested object instead of a string for a field we expect to
+ * be text.
+ */
+function asString(value: unknown, field: string): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  throw new Error(`Field '${field}' must be a string, got ${typeof value}`);
+}
+
 @Injectable()
 export class AiResponseParserService {
   parseGeneratedText(rawResponse: string): GeneratedText {
@@ -45,17 +57,17 @@ export class AiResponseParserService {
       throw new Error('Missing required fields in generated text response');
     }
 
-    const categoryNormalized = String(parsed.category)
+    const categoryNormalized = asString(parsed.category, 'category')
       .toLowerCase()
       .trim()
       .replace(/[\s-]+/g, '_');
 
     if (!ALLOWED_CATEGORIES.includes(categoryNormalized as TextCategory)) {
-      throw new Error(`Invalid category: ${String(parsed.category)}`);
+      throw new Error(`Invalid category: ${asString(parsed.category, 'category')}`);
     }
     const category = categoryNormalized as TextCategory;
 
-    const difficultyRaw = String(parsed.difficulty ?? '').toLowerCase();
+    const difficultyRaw = asString(parsed.difficulty ?? '', 'difficulty').toLowerCase();
     const difficulty: TextDifficulty = ALLOWED_DIFFICULTIES.includes(
       difficultyRaw as TextDifficulty,
     )
@@ -63,9 +75,9 @@ export class AiResponseParserService {
       : 'medium';
 
     return {
-      title: String(parsed.title),
-      description: String(parsed.description),
-      content: String(parsed.content),
+      title: asString(parsed.title, 'title'),
+      description: asString(parsed.description, 'description'),
+      content: asString(parsed.content, 'content'),
       category,
       difficulty,
     };
@@ -75,7 +87,7 @@ export class AiResponseParserService {
     const parsed = this.extractJson(rawResponse) as Record<string, unknown>;
     const rawScore = Number(parsed.score);
     const score = Math.max(0, Math.min(100, Math.round(rawScore)));
-    const feedback = String(parsed.feedback ?? '');
+    const feedback = asString(parsed.feedback ?? '', 'feedback');
     return {
       score,
       passed: score >= 80,

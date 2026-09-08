@@ -11,7 +11,7 @@ describe('UsersController', () => {
   beforeEach(async () => {
     users = {
       activeStreakFor: jest.fn().mockResolvedValue([1, 0, 1, 1, 0, 1, 1]),
-    } as never;
+    };
 
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersController],

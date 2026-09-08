@@ -25,9 +25,10 @@
  * running container; the bootstrap ordering we assert here is independent
  * of Scalar.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, @typescript-eslint/consistent-type-imports
 const supertest: typeof import('supertest') = require('supertest');
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '../src/app.module';
@@ -80,7 +81,7 @@ describe('main.ts bootstrap order produces a consistent OpenAPI document', () =>
       debug: () => undefined,
       verbose: () => undefined,
       fatal: () => undefined,
-    } as never);
+    });
 
     const env = app.get(AppConfigService);
 
@@ -93,7 +94,7 @@ describe('main.ts bootstrap order produces a consistent OpenAPI document', () =>
       .setVersion('1.0.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
       .build();
-    document = SwaggerModule.createDocument(app, swaggerConfig) as unknown as typeof document;
+    document = SwaggerModule.createDocument(app, swaggerConfig);
 
     // Mount the JSON spec at the prefixed path (matches the corrected main.ts).
     app.getHttpAdapter().get(`/${env.apiPrefix}/openapi.json`, (_req, res) => {

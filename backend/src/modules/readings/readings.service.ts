@@ -63,7 +63,7 @@ export class ReadingsService {
         { role: 'system', content: prompt.systemPrompt },
         { role: 'user', content: prompt.userPrompt },
       ]);
-    } catch (err) {
+    } catch (_err) {
       throw new AppHttpException(ErrorCode.SERVICE_UNAVAILABLE, { operation: 'ai_chat' });
     }
 
@@ -84,9 +84,8 @@ export class ReadingsService {
     // the output "difficulty" field MUST be the requested one, but if the
     // model ignores that and returns a different level, we override it
     // before persisting so the database stays in sync with the user's
-    // request. This matches the legacy AdonisJS behaviour.
-    const requestedDifficulty: DifficultyLevel = (input.options.difficulty ??
-      'medium') as DifficultyLevel;
+    // request.
+    const requestedDifficulty: DifficultyLevel = input.options.difficulty ?? 'medium';
     if (parsed.difficulty !== requestedDifficulty) {
       const previousDifficulty = parsed.difficulty;
       parsed = { ...parsed, difficulty: requestedDifficulty };
@@ -150,7 +149,7 @@ export class ReadingsService {
       .where(and(eq(readings.id, id), isNull(readings.deletedAt)))
       .limit(1);
     const reading = rows[0];
-    if (!reading || reading.userId !== userId) {
+    if (reading?.userId !== userId) {
       throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'Reading' });
     }
     return reading;

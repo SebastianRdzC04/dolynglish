@@ -54,6 +54,8 @@ describe('ThinkBlockParser', () => {
     parser.consume('<think>never closes');
     const flushed = parser.flush();
     // We must NOT leak the think content. Either empty or signal an error.
-    expect(flushed.find((f) => f.type === 'text' && f.value.includes('never closes'))).toBeUndefined();
+    expect(
+      flushed.find((f) => f.type === 'text' && f.value.includes('never closes')),
+    ).toBeUndefined();
   });
 });

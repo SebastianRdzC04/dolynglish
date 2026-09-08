@@ -14,7 +14,8 @@
  *
  * Endpoints that legitimately return no body (HTTP 204) are excluded.
  */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import supertest from 'supertest';
@@ -89,7 +90,7 @@ describe('every endpoint documents its success response shape', () => {
       debug: () => undefined,
       verbose: () => undefined,
       fatal: () => undefined,
-    } as never);
+    });
 
     // Match main.ts: prefix first, then build the document, then validation pipe.
     const env = app.get(AppConfigService);

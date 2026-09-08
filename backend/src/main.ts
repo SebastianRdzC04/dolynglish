@@ -78,12 +78,11 @@ async function bootstrap(): Promise<void> {
   // empty makes the "Try it" button hit the correct relative path.
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dolynglish API')
-    .setDescription('Backend for the Dolynglish mobile app — language learning with AI-generated reading exercises')
-    .setVersion('1.0.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'access-token',
+    .setDescription(
+      'Backend for the Dolynglish mobile app — language learning with AI-generated reading exercises',
     )
+    .setVersion('1.0.0')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .addTag('auth', 'User registration, login, logout, refresh')
     .addTag('user', 'User profile and streak')
     .addTag('readings', 'AI-generated English readings and evaluations')
