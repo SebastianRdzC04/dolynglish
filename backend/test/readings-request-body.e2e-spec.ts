@@ -3,13 +3,12 @@
  * schema is documented in OpenAPI with the three fields the LLM sees:
  * `category` (req), `difficulty`, `size`.
  *
- * Historical bug (2026-08-30): the migration to Nest dropped the body
- * parameters that the old AdonisJS API accepted, leaving only an inert
- * `seed` field. Clients had no way to ask for a specific topic or
- * difficulty; the backend picked a random combo behind the scenes.
- * Reported by Sebas via WhatsApp after seeing the OpenAPI doc show only
- * `{ seed: string }` under the request body — and again after we exposed
- * `cefrLevel` to the client without giving them `size`.
+ * Historical bug (2026-08-30): an earlier iteration of this endpoint
+ * exposed only an inert `seed` field. Clients had no way to ask for a
+ * specific topic or difficulty; the backend picked a random combo behind
+ * the scenes. Reported by Sebas via WhatsApp after seeing the OpenAPI doc
+ * show only `{ seed: string }` under the request body — and again after
+ * we exposed `cefrLevel` to the client without giving them `size`.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';

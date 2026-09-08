@@ -84,7 +84,7 @@ export class ReadingsService {
     // the output "difficulty" field MUST be the requested one, but if the
     // model ignores that and returns a different level, we override it
     // before persisting so the database stays in sync with the user's
-    // request. This matches the legacy AdonisJS behaviour.
+    // request.
     const requestedDifficulty: DifficultyLevel = (input.options.difficulty ??
       'medium') as DifficultyLevel;
     if (parsed.difficulty !== requestedDifficulty) {

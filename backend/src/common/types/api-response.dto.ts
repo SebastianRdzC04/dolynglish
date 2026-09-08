@@ -132,7 +132,7 @@ export class ReadingCategoryDto {
   @ApiProperty({
     example: ['Web Development', 'Databases'],
     description:
-      'Sub-topics the LLM can focus on inside this category. Backed by the legacy AdonisJS catalogue.',
+      'Sub-topics the LLM can focus on inside this category.',
     type: [String],
   })
   subcategories!: string[];
