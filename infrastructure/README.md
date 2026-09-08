@@ -11,7 +11,10 @@ infrastructure/
 ├── docker-compose.prod.yml    # Postgres + backend (producción)
 └── database/
     └── postgres/
-        └── 01-init.sql        # Schema completo, se aplica al primer arranque
+        ├── 01-init.sql                 # Schema completo (se aplica al primer arranque)
+        └── updates/                    # Cambios post-primer-deploy a prod
+            ├── README.md               # Convención de updates (idempotencia, naming)
+            └── YYYY-MM-DD_*.sql        # ALTERs cronológicos
 ```
 
 ## Levantar Postgres para desarrollo / tests
@@ -80,9 +83,22 @@ el schema al arrancar.
 ## Schema SQL
 
 El schema completo vive en
-[`database/postgres/01-init.sql`](./database/postgres/01-init.sql). Para
-añadir tablas o columnas, editar ese archivo y recrear el contenedor (o
-aplicar manualmente con `psql -f 01-init.sql`).
+[`database/postgres/01-init.sql`](./database/postgres/01-init.sql). Se
+aplica automáticamente al primer arranque del contenedor de Postgres
+(vía `/docker-entrypoint-initdb.d/`). En arranques posteriores no se
+vuelve a aplicar.
+
+### Cambios al schema: regla de dos fases
+
+- **Mientras `prod` no se ha desplegado** (estamos en dev puro):
+  editar directamente `01-init.sql` con el estado final deseado.
+- **Después del primer deploy a `prod`**: NO editar `01-init.sql`;
+  crear archivos `updates/YYYY-MM-DD_<nombre>.sql` con `ALTER`s
+  idempotentes. Se aplican en orden alfabético (= cronológico).
+
+Detalles completos en
+[`docs/conventions/database.md`](../docs/conventions/database.md) y en
+[`database/postgres/updates/README.md`](./database/postgres/updates/README.md).
 
 Política completa en
 [`docs/conventions/database.md`](../docs/conventions/database.md).
