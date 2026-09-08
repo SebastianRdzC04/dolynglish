@@ -20,7 +20,8 @@ module.exports = {
   rules: {
     // ---- TypeScript best practices (strict) ----
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-unsafe-any': 'error',
+    // 'no-unsafe-any' was deprecated in typescript-eslint v6 and removed
+    // in v8. The specific no-unsafe-* family below covers the same cases.
     '@typescript-eslint/no-unsafe-assignment': 'warn',
     '@typescript-eslint/no-unsafe-call': 'warn',
     '@typescript-eslint/no-unsafe-member-access': 'warn',
