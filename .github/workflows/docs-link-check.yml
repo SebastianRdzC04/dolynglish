@@ -31,5 +31,5 @@ jobs:
           # Offline mode: only check that local file links resolve, don't
           # hit the network. External link checking can be enabled later
           # by removing --offline once the docs surface is stable.
-          args: --offline --no-progress --exclude-loopback --exclude-mail docs/**/*.md backend/**/*.md README.md
+          args: --offline --no-progress --exclude-loopback 'docs/**/*.md' 'backend/**/*.md' 'README.md'
           fail: true
