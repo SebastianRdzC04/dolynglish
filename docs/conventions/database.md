@@ -6,29 +6,120 @@ El backend usa **PostgreSQL 15** vía **Drizzle ORM** sobre el driver `pg`.
 
 - **PostgreSQL 15** (en dev, prod vía Docker).
 - **node-postgres** (`pg` ^8.13) como driver.
-- **Drizzle ORM** (`drizzle-orm` ^0.36) como query builder.
-- **Sin migraciones desde el backend**: el schema se aplica vía SQL crudo.
+- **Drizzle ORM** (`drizzle-orm` ^0.36) como query builder y type-safety
+  en el código backend.
+- **Sin migraciones desde el backend**: el schema vive como SQL escrito
+  a mano (ver siguiente sección).
 
-## Schema: decisión intencional
+## Nota sobre Drizzle
 
-El schema completo vive en
-[`infrastructure/database/postgres/01-init.sql`](../../infrastructure/database/postgres/01-init.sql).
-Se monta automáticamente como `/docker-entrypoint-initdb.d/01-init.sql` en el
-contenedor de Postgres, por lo que se ejecuta **al primer arranque** del
-contenedor.
+Drizzle se usa **solo** para tipos TypeScript y validación en el código
+backend (`backend/src/database/drizzle/schema.ts` da las formas de las
+filas a `select()`/`insert()`).
 
-**Por qué no usamos migraciones desde el backend:**
+Drizzle **no genera SQL** en este proyecto. Los archivos SQL en
+`infrastructure/database/` se escriben y mantienen a mano. Drizzle no
+corre migraciones contra la BD.
 
-- Simplicidad operativa: el `docker compose up` es el único punto de
-  provisionamiento.
-- Menos tooling: no hace falta `drizzle-kit migrate` ni mantener el
-  historial de migraciones.
-- El equipo todavía está iterando rápido sobre el schema — un único SQL
-  es más fácil de revisar que 30 migrations.
+Si vienes de un proyecto Prisma/Drizzle-con-migrations: aquí el SQL es
+manual y vive en `infrastructure/database/`. Drizzle es únicamente para
+que el código del backend no se rompa cuando cambia el schema.
 
-**Tradeoff asumido:** cualquier cambio de schema requiere recrear el
-contenedor de Postgres en dev. En prod se haría con `psql -f 01-init.sql`
-sobre la BD existente (con cuidado para no perder datos).
+## Schema: dos archivos, dos fases
+
+```
+infrastructure/database/postgres/
+├── 01-init.sql               # SIEMPRE el estado final deseado
+└── updates/                  # vacío hasta el primer deploy a prod
+    ├── README.md             # convención de updates
+    └── YYYY-MM-DD_*.sql      # ALTERs idempotentes, orden alfabético
+```
+
+## Cambios al schema: regla de dos fases
+
+La regla para tocar el schema depende de si `prod` ya fue desplegado
+alguna vez o no.
+
+### Fase 1 — Mientras `prod` NUNCA se ha desplegado (estamos en dev puro)
+
+- Edita directamente `infrastructure/database/postgres/01-init.sql`
+- NO crear archivos en `updates/` todavía — el contenedor de Postgres
+  corre solo el init al arrancar
+- El `01-init.sql` debe representar el **estado final deseado** del
+  schema en producción (no el estado actual con parches intermedios
+  comentados)
+
+### Fase 2 — Una vez `prod` se desplegó al menos una vez
+
+- **`01-init.sql` se congela** en el estado que tenía al momento del
+  primer deploy. NO se edita más.
+- Cada cambio va en
+  `infrastructure/database/postgres/updates/YYYY-MM-DD_<nombre>.sql`
+- Se aplican en orden alfabético (= orden cronológico de nombre)
+- En prod, el init NO se vuelve a correr (el volumen de Postgres
+  persiste, el entrypoint del contenedor ignora `initdb.d/` en
+  arranques posteriores)
+
+### En cualquier fase: usar statements idempotentes
+
+Para que `01-init.sql` y todos los `updates/*.sql` puedan ejecutarse
+juntos sin conflicto (caso típico: re-arrancar el contenedor de dev
+después de un cambio, o resetear el schema en CI), todos los
+statements deben ser **idempotentes**:
+
+```sql
+-- ✅ siempre idempotente
+CREATE TABLE IF NOT EXISTS users (...);
+CREATE INDEX IF NOT EXISTS idx_X ON ...(...);
+CREATE UNIQUE INDEX IF NOT EXISTS ...;
+ALTER TABLE readings ADD COLUMN IF NOT EXISTS user_response TEXT;
+ALTER TABLE readings ALTER COLUMN user_response SET NOT NULL;
+ALTER TABLE readings ADD CONSTRAINT ... CHECK (...);
+
+-- ❌ no idempotente — no usar
+CREATE TABLE users (...);
+ALTER TABLE readings ADD COLUMN user_response TEXT;
+DROP INDEX idx_X;
+```
+
+Idempotencia es lo que permite que el dev local pueda
+re-ejecutar todo el set sin miedo a romper, y que CI pueda resetear
+el schema de tests con `docker compose -f docker-compose.test.yml down -v`
+sin distinguir "primer arranque" de "siguiente arranque".
+
+> **Nota sobre `DROP COLUMN IF EXISTS`**: solo disponible en Postgres
+> 16+. Este proyecto usa Postgres 15 así que esa sintaxis no
+> funciona — para dropear una columna en un update usar un script
+> nuevo en `updates/` con la versión sin `IF EXISTS` y aplicar solo
+> una vez manualmente, o mover la columna a una convención de soft
+> delete antes del primer deploy.
+
+### Workflow concreto cuando agregas una columna
+
+1. **Crear el archivo de update** —
+   `infrastructure/database/postgres/updates/YYYY-MM-DD_<nombre>.sql`:
+   ```sql
+   -- YYYY-MM-DD: <descripción corta>
+   ALTER TABLE readings ADD COLUMN IF NOT EXISTS user_response TEXT;
+   ```
+2. **Actualizar `01-init.sql`** para que el `CREATE TABLE readings`
+   ya incluya la columna desde el inicio (mismo estado final):
+   ```sql
+   CREATE TABLE readings (
+     ...
+     user_response TEXT,
+     ...
+   );
+   ```
+3. **Commit ambos en el mismo PR** con mensaje
+   `feat(db): add user_response column to readings`
+4. Si hay código backend que referencia la columna, los cambios de
+   código van en commits separados (respetando la regla de
+   "commits pequeños" del [commits.md](./commits.md))
+
+Ver el ejemplo canónico en
+[`updates/README.md`](../../infrastructure/database/postgres/updates/README.md)
+para el detalle de la convención.
 
 ## Tablas actuales
 
@@ -51,31 +142,11 @@ sobre la BD existente (con cuidado para no perder datos).
 El mapping snake_case ↔ camelCase se declara explícitamente en
 [`backend/src/database/drizzle/schema.ts`](../../backend/src/database/drizzle/schema.ts).
 
-## Añadir una columna
-
-1. Editar `infrastructure/database/postgres/01-init.sql`.
-2. Actualizar el schema Drizzle en
-   [`backend/src/database/drizzle/schema.ts`](../../backend/src/database/drizzle/schema.ts).
-3. Si afecta tipos públicos, actualizar el `*Dto` correspondiente.
-4. Verificar que `npm run verify` pasa.
-
-## Añadir una tabla nueva
-
-1. Añadir `CREATE TABLE` en `01-init.sql`.
-2. Definir el schema en `backend/src/database/drizzle/schema.ts`.
-3. Si hay relaciones con otras tablas, declararlas en
-   [`backend/src/database/drizzle/relations.ts`](../../backend/src/database/drizzle/relations.ts).
-4. Crear un módulo de Nest que la use (controller + service).
-
-## Drizzle types
-
-- Tipos inferidos: `typeof usersTable.$inferSelect` / `$inferInsert`.
-- Helpers de columnas: `pgTable`, `pgEnum`, `uuid`, `text`, `timestamp`,
-  `integer`, etc. (todo en `drizzle-orm/pg-core`).
-
 ## Conexión
 
-- Provider global vía [`backend/src/database/database.module.ts`](../../backend/src/database/database.module.ts).
-- Token `DRIZZLE` exportado en [`backend/src/database/database.tokens.ts`](../../backend/src/database/database.tokens.ts).
+- Provider global vía
+  [`backend/src/database/database.module.ts`](../../backend/src/database/database.module.ts).
+- Token `DRIZZLE` exportado en
+  [`backend/src/database/database.tokens.ts`](../../backend/src/database/database.tokens.ts).
 - En tests, mockear el provider con un objeto que expone `.select()`,
   `.insert()`, etc.
