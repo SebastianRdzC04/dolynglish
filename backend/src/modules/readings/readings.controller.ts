@@ -45,11 +45,11 @@ export class ReadingsController {
   @ApiOperation({ summary: 'Get generation options (categories, difficulties, cefr)' })
   @ApiOkResponseOf(ReadingOptionsDto)
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth', type: ApiErrorDto })
-  async getOptions(): Promise<ApiResponse<ReadingOptionsDto>> {
-    return apiOk(
-      'Generation options',
-      (await this.readings.getOptions()) as unknown as ReadingOptionsDto,
-    );
+  getOptions(): ApiResponse<ReadingOptionsDto> {
+    // The service returns a structurally similar but type-loose shape (id: string
+    // vs the DTO's literal union). Cast to ReadingOptionsDto since this is the
+    // canonical response type for the /readings/options endpoint.
+    return apiOk('Generation options', this.readings.getOptions() as unknown as ReadingOptionsDto);
   }
 
   @Post()

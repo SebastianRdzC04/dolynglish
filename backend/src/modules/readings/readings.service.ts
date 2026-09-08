@@ -63,7 +63,7 @@ export class ReadingsService {
         { role: 'system', content: prompt.systemPrompt },
         { role: 'user', content: prompt.userPrompt },
       ]);
-    } catch (err) {
+    } catch (_err) {
       throw new AppHttpException(ErrorCode.SERVICE_UNAVAILABLE, { operation: 'ai_chat' });
     }
 
@@ -149,7 +149,7 @@ export class ReadingsService {
       .where(and(eq(readings.id, id), isNull(readings.deletedAt)))
       .limit(1);
     const reading = rows[0];
-    if (!reading || reading.userId !== userId) {
+    if (reading?.userId !== userId) {
       throw new AppHttpException(ErrorCode.RESOURCE_NOT_FOUND, { resource: 'Reading' });
     }
     return reading;

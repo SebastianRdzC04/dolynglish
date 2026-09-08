@@ -60,6 +60,7 @@ export class DatabaseModule implements OnModuleInit, OnApplicationShutdown {
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Database module ready');
+    await Promise.resolve();
   }
 
   async onApplicationShutdown(): Promise<void> {

@@ -84,6 +84,8 @@ export class UsersService {
   }
 
   async activeStreakFor(_userId: number, days = 7): Promise<number[]> {
-    return Array.from({ length: days }, () => 1);
+    const result = Array.from({ length: days }, () => 1);
+    await Promise.resolve(result);
+    return result;
   }
 }

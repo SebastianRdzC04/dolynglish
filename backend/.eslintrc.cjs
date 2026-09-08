@@ -49,6 +49,7 @@ module.exports = {
     '@typescript-eslint/no-duplicate-enum-values': 'error',
     '@typescript-eslint/no-misused-new': 'error',
     '@typescript-eslint/no-invalid-void-type': 'error',
+    '@typescript-eslint/no-unsafe-enum-comparison': 'error',
     // ---- General ----
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'no-debugger': 'error',
@@ -60,11 +61,16 @@ module.exports = {
     {
       files: ['*.spec.ts', '*.e2e-spec.ts', 'test/**/*.ts'],
       rules: {
+        // Test files are allowed to use `any` for mocks of NestJS
+        // internals (Express app, supertest responses, env config).
+        // Tightening these would force casts in fixtures that hide real
+        // bugs.
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-call': 'off',
         '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
         'no-console': 'off',

@@ -25,7 +25,7 @@
  * running container; the bootstrap ordering we assert here is independent
  * of Scalar.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, @typescript-eslint/consistent-type-imports
 const supertest: typeof import('supertest') = require('supertest');
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
