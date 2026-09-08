@@ -10,7 +10,8 @@
  * show only `{ seed: string }` under the request body — and again after
  * we exposed `cefrLevel` to the client without giving them `size`.
  */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import supertest from 'supertest';
@@ -44,7 +45,10 @@ describe('POST /readings request body is fully documented', () => {
   let document: {
     paths?: Record<
       string,
-      Record<string, { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }>
+      Record<
+        string,
+        { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }
+      >
     >;
     components?: {
       schemas?: Record<
@@ -74,7 +78,7 @@ describe('POST /readings request body is fully documented', () => {
       debug: () => undefined,
       verbose: () => undefined,
       fatal: () => undefined,
-    } as never);
+    });
 
     const env = app.get(AppConfigService);
     app.setGlobalPrefix(env.apiPrefix);
@@ -119,14 +123,22 @@ describe('POST /readings request body is fully documented', () => {
     expect(category).toBeDefined();
     expect(category?.type).toBe('string');
     expect(category?.enum).toEqual(
-      expect.arrayContaining(['technology', 'history', 'education', 'programming', 'culture', 'pop_culture']),
+      expect.arrayContaining([
+        'technology',
+        'history',
+        'education',
+        'programming',
+        'culture',
+        'pop_culture',
+      ]),
     );
     expect(category?.example).toBe('technology');
     expect(schema?.required).toEqual(expect.arrayContaining(['category']));
   });
 
   it('GenerateReadingDto documents difficulty (optional) with the right enum and example', () => {
-    const difficulty = document.components?.schemas?.['GenerateReadingDto']?.properties?.['difficulty'];
+    const difficulty =
+      document.components?.schemas?.['GenerateReadingDto']?.properties?.['difficulty'];
     expect(difficulty).toBeDefined();
     expect(difficulty?.type).toBe('string');
     expect(difficulty?.enum).toEqual(expect.arrayContaining(['easy', 'medium', 'hard']));
@@ -142,7 +154,8 @@ describe('POST /readings request body is fully documented', () => {
   });
 
   it('GenerateReadingDto does NOT expose cefrLevel (derived internally)', () => {
-    const cefrLevel = document.components?.schemas?.['GenerateReadingDto']?.properties?.['cefrLevel'];
+    const cefrLevel =
+      document.components?.schemas?.['GenerateReadingDto']?.properties?.['cefrLevel'];
     expect(cefrLevel).toBeUndefined();
   });
 
@@ -154,9 +167,17 @@ describe('POST /readings request body is fully documented', () => {
   it('live OpenAPI: /api/v1/openapi.json references GenerateReadingDto for POST /readings', async () => {
     const response = await supertest(app.getHttpServer()).get('/api/v1/openapi.json').expect(200);
     const live = response.body as {
-      paths?: Record<string, Record<string, { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }>>;
+      paths?: Record<
+        string,
+        Record<
+          string,
+          { requestBody?: { content?: { 'application/json'?: { schema?: { $ref?: string } } } } }
+        >
+      >;
     };
-    const ref = live.paths?.['/api/v1/readings']?.post?.requestBody?.content?.['application/json']?.schema?.$ref;
+    const ref =
+      live.paths?.['/api/v1/readings']?.post?.requestBody?.content?.['application/json']?.schema
+        ?.$ref;
     expect(ref).toBe('#/components/schemas/GenerateReadingDto');
   });
 });

@@ -141,9 +141,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return null;
   }
 
-  private tryReadDetailsFromBody(
-    body: string | object,
-  ): Record<string, unknown> | undefined {
+  private tryReadDetailsFromBody(body: string | object): Record<string, unknown> | undefined {
     if (typeof body !== 'object' || body === null) return undefined;
     const d = (body as { details?: unknown }).details;
     if (d && typeof d === 'object') return d as Record<string, unknown>;

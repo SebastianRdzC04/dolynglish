@@ -1,4 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '../src/app.module';
@@ -162,7 +163,8 @@ describe('OpenAPI schema documentation', () => {
       expect(op).toBeDefined();
       const requestBody = op?.['requestBody'] as Record<string, unknown> | undefined;
       expect(requestBody).toBeDefined();
-      const content = requestBody?.['content'] as Record<string, Record<string, { schema?: { $ref?: string } }>> | undefined;
+      const content = requestBody?.['content'] as
+        Record<string, Record<string, { schema?: { $ref?: string } }>> | undefined;
       const jsonContent = content?.['application/json'];
       expect(jsonContent).toBeDefined();
       const ref = (jsonContent?.['schema'] as { $ref?: string } | undefined)?.['$ref'];

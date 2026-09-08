@@ -30,7 +30,7 @@ describe('AuthService', () => {
       create: jest.fn(),
       verifyPassword: jest.fn(),
       toPublic: jest.fn(),
-    } as never;
+    };
 
     jwtService = {
       signAsync: jest.fn(),
@@ -39,7 +39,7 @@ describe('AuthService', () => {
 
     authEventLogService = {
       logAuthEvent: jest.fn().mockResolvedValue(undefined),
-    } as never;
+    };
 
     const configMock = {
       get: jest.fn((key: string): string | undefined => {
@@ -76,7 +76,7 @@ describe('AuthService', () => {
         deletedAt: null,
       };
       usersService.findByEmail.mockResolvedValue(null);
-      usersService.create.mockResolvedValue(userRow as never);
+      usersService.create.mockResolvedValue(userRow);
       usersService.toPublic.mockReturnValue(publicUserFixture);
       jwtService.signAsync.mockResolvedValueOnce('access.jwt').mockResolvedValueOnce('refresh.jwt');
 
@@ -120,7 +120,7 @@ describe('AuthService', () => {
         updatedAt: null,
         deletedAt: null,
       };
-      usersService.findByEmail.mockResolvedValue(userRow as never);
+      usersService.findByEmail.mockResolvedValue(userRow);
       usersService.verifyPassword.mockResolvedValue(true);
       usersService.toPublic.mockReturnValue(publicUserFixture);
       jwtService.signAsync.mockResolvedValueOnce('access.jwt').mockResolvedValueOnce('refresh.jwt');
@@ -150,7 +150,7 @@ describe('AuthService', () => {
         updatedAt: null,
         deletedAt: null,
       };
-      usersService.findByEmail.mockResolvedValue(userRow as never);
+      usersService.findByEmail.mockResolvedValue(userRow);
       usersService.verifyPassword.mockResolvedValue(false);
       await expect(service.login({ email: 'a@b.c', password: 'wrong' })).rejects.toBeInstanceOf(
         AppHttpException,
@@ -171,7 +171,7 @@ describe('AuthService', () => {
         updatedAt: null,
         deletedAt: null,
       };
-      usersService.findById.mockResolvedValue(userRow as never);
+      usersService.findById.mockResolvedValue(userRow);
       usersService.toPublic.mockReturnValue(publicUserFixture);
       const me = await service.me(1);
       expect(me.email).toBe('a@b.c');

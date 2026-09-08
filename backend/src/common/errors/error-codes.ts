@@ -93,7 +93,8 @@ export const ErrorCatalog: Record<ErrorCode, ErrorMeta> = {
   [ErrorCode.READING_PENDING_LIMIT_REACHED]: {
     code: ErrorCode.READING_PENDING_LIMIT_REACHED,
     status: 400,
-    message: 'You have reached the maximum number of pending readings. Complete or delete some before generating more.',
+    message:
+      'You have reached the maximum number of pending readings. Complete or delete some before generating more.',
   },
   [ErrorCode.READING_ALREADY_EVALUATED]: {
     code: ErrorCode.READING_ALREADY_EVALUATED,

@@ -1,4 +1,11 @@
-import { Module, Global, Inject, Logger, OnModuleInit, OnApplicationShutdown } from '@nestjs/common';
+import {
+  Module,
+  Global,
+  Inject,
+  Logger,
+  OnModuleInit,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
@@ -14,7 +21,8 @@ export type DrizzleDb = ReturnType<typeof drizzleType>;
   providers: [
     {
       provide: AppConfigService,
-      useFactory: (config: ConfigService): AppConfigService => new AppConfigService(config as never),
+      useFactory: (config: ConfigService): AppConfigService =>
+        new AppConfigService(config as never),
       inject: [ConfigService],
     },
     {

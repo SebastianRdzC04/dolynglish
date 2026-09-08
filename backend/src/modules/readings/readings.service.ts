@@ -85,8 +85,7 @@ export class ReadingsService {
     // model ignores that and returns a different level, we override it
     // before persisting so the database stays in sync with the user's
     // request.
-    const requestedDifficulty: DifficultyLevel = (input.options.difficulty ??
-      'medium') as DifficultyLevel;
+    const requestedDifficulty: DifficultyLevel = input.options.difficulty ?? 'medium';
     if (parsed.difficulty !== requestedDifficulty) {
       const previousDifficulty = parsed.difficulty;
       parsed = { ...parsed, difficulty: requestedDifficulty };
