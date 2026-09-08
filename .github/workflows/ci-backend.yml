@@ -91,7 +91,7 @@ jobs:
       DB_PORT: '5432'
       DB_USER: test
       DB_PASSWORD: test
-      DB_NAME: dolynglish_test
+      DB_DATABASE: dolynglish_test
       JWT_SECRET: test-secret-test-secret-test-secret-test-secret-test-secret
       JWT_ACCESS_TTL: 15m
       JWT_REFRESH_TTL: 30d
