@@ -82,7 +82,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         volumes:
-          - ./infrastructure/database/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+          - ./infrastructure/database/postgres:/docker-entrypoint-initdb.d:ro
     env:
       NODE_ENV: test
       PORT: 3333
