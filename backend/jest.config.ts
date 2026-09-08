@@ -10,7 +10,7 @@ const config: Config = {
   transform: { '^.+\\.(t|j)s$': 'ts-jest' },
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js', 'json'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/backend-adonis-bak/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts'],
   coverageDirectory: './coverage',
   moduleNameMapper: {

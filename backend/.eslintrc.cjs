@@ -16,7 +16,7 @@ module.exports = {
     node: true,
     jest: true,
   },
-  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules', 'coverage', 'backend-adonis-bak'],
+  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules', 'coverage'],
   rules: {
     // ---- TypeScript best practices (strict) ----
     '@typescript-eslint/no-explicit-any': 'error',

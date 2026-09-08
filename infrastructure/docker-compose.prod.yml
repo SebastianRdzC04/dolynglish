@@ -26,7 +26,6 @@ services:
       - PORT=${PORT}
       - HOST=${HOST}
       - LOG_LEVEL=${LOG_LEVEL}
-      - APP_KEY=${APP_KEY}
       - NODE_ENV=${NODE_ENV}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
