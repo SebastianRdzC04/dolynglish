@@ -126,6 +126,14 @@ jobs:
           done
           exit 1
 
+      - name: Apply schema
+        # Apply the SQL schema explicitly instead of via the docker
+        # entrypoint's /docker-entrypoint-initdb.d/ volume mount, which
+        # has inconsistent behaviour across GitHub Actions runners
+        # (the entrypoint sometimes ignores the directory after restart).
+        run: |
+          PGPASSWORD='test' psql -h localhost -U test -d dolynglish_test -v ON_ERROR_STOP=1 -f ../infrastructure/database/postgres/01-init.sql
+
       - name: Run e2e tests
         run: npm run test:e2e
 

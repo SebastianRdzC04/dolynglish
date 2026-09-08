@@ -79,5 +79,9 @@ jobs:
           done
           exit 1
 
+      - name: Apply schema
+        run: |
+          PGPASSWORD='test' psql -h localhost -U test -d dolynglish_test -v ON_ERROR_STOP=1 -f ../infrastructure/database/postgres/01-init.sql
+
       - name: Run OpenAPI envelope + coverage guards
         run: npx jest --config ./test/jest-e2e.json openapi-envelope openapi-response-coverage bootstrap-ordering
