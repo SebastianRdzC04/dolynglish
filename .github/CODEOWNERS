@@ -1,0 +1,25 @@
+# CODEOWNERS
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners.
+# Order matters: later patterns override earlier ones.
+
+# Default owner for everything in the repo
+* @SebastianRdzC04
+
+# Backend core code: tighter review for shared concerns and feature
+# modules. Today there's a single owner; when the team grows, add
+# more GitHub handles here.
+/backend/src/common/ @SebastianRdzC04
+/backend/src/modules/auth/ @SebastianRdzC04
+/backend/src/modules/readings/ @SebastianRdzC04
+/backend/src/modules/ia/ @SebastianRdzC04
+/backend/src/modules/users/ @SebastianRdzC04
+/backend/src/app.module.ts @SebastianRdzC04
+/backend/src/main.ts @SebastianRdzC04
+/backend/src/database/ @SebastianRdzC04
+/backend/src/config/ @SebastianRdzC04
+
+# CI, docs and infrastructure: only the owner needs to approve
+/docs/ @SebastianRdzC04
+/infrastructure/ @SebastianRdzC04
+/.github/ @SebastianRdzC04
