@@ -39,6 +39,8 @@ CREATE TABLE readings (
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     score INTEGER,
     passed BOOLEAN,
+    user_response TEXT,
+    feedback TEXT,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP,
     deleted_at TIMESTAMP
