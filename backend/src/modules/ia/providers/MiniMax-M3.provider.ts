@@ -91,7 +91,10 @@ export class MiniMaxProvider implements AIProvider {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify({ ...(this.buildRequestBody(messages) as Record<string, unknown>), stream: true }),
+        body: JSON.stringify({
+          ...this.buildRequestBody(messages),
+          stream: true,
+        }),
         signal: controller.signal,
       });
 
@@ -156,7 +159,5 @@ function stripThinkBlock(text: string): string {
   if (openIdx === -1) return text;
   const closeIdx = text.indexOf('</think>', openIdx);
   if (closeIdx === -1) return '';
-  return text
-    .slice(closeIdx + '</think>'.length)
-    .replace(/^\s+/, '');
+  return text.slice(closeIdx + '</think>'.length).replace(/^\s+/, '');
 }

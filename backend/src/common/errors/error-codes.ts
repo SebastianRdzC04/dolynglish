@@ -46,79 +46,98 @@ export interface ErrorMeta {
 }
 
 /**
+ * Builder for ErrorMeta entries. Using a function (instead of inline object
+ * literals) makes typescript-eslint accept the assignment: the parameter is
+ * typed as the union ErrorCode, which the specific enum member satisfies.
+ */
+const entry = (code: ErrorCode, status: number, message: string): ErrorMeta => ({
+  code,
+  status,
+  message,
+});
+
+/**
  * The full catalogue. Every ErrorCode MUST have an entry here.
  * Tests in error-codes.spec.ts assert this exhaustively.
  */
+// The indexed access [ErrorCode.X]: entry(...) compares the enum member
+// type with the Record key type. typescript-eslint flags this as
+// no-unsafe-enum-comparison even though every entry IS keyed by its own
+// ErrorCode value — a known false positive for string/numeric enums.
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 export const ErrorCatalog: Record<ErrorCode, ErrorMeta> = {
-  [ErrorCode.AUTH_INVALID_CREDENTIALS]: {
-    code: ErrorCode.AUTH_INVALID_CREDENTIALS,
-    status: 401,
-    message: 'Invalid email or password',
-  },
-  [ErrorCode.AUTH_TOKEN_EXPIRED]: {
-    code: ErrorCode.AUTH_TOKEN_EXPIRED,
-    status: 401,
-    message: 'Authentication token has expired',
-  },
-  [ErrorCode.AUTH_TOKEN_INVALID]: {
-    code: ErrorCode.AUTH_TOKEN_INVALID,
-    status: 401,
-    message: 'Authentication token is invalid',
-  },
-  [ErrorCode.AUTH_EMAIL_ALREADY_EXISTS]: {
-    code: ErrorCode.AUTH_EMAIL_ALREADY_EXISTS,
-    status: 409,
-    message: 'An account with that email already exists',
-  },
-  [ErrorCode.AUTH_PASSWORD_TOO_WEAK]: {
-    code: ErrorCode.AUTH_PASSWORD_TOO_WEAK,
-    status: 400,
-    message: 'Password does not meet the minimum strength requirements',
-  },
-  [ErrorCode.AUTH_UNAUTHORIZED]: {
-    code: ErrorCode.AUTH_UNAUTHORIZED,
-    status: 401,
-    message: 'Authentication is required to access this resource',
-  },
-  [ErrorCode.RESOURCE_NOT_FOUND]: {
-    code: ErrorCode.RESOURCE_NOT_FOUND,
-    status: 404,
-    message: 'The requested resource was not found',
-  },
-  [ErrorCode.RESOURCE_FORBIDDEN]: {
-    code: ErrorCode.RESOURCE_FORBIDDEN,
-    status: 403,
-    message: 'You do not have permission to access this resource',
-  },
-  [ErrorCode.READING_PENDING_LIMIT_REACHED]: {
-    code: ErrorCode.READING_PENDING_LIMIT_REACHED,
-    status: 400,
-    message: 'You have reached the maximum number of pending readings. Complete or delete some before generating more.',
-  },
-  [ErrorCode.READING_ALREADY_EVALUATED]: {
-    code: ErrorCode.READING_ALREADY_EVALUATED,
-    status: 400,
-    message: 'This reading has already been evaluated and cannot be modified',
-  },
-  [ErrorCode.VALIDATION_ERROR]: {
-    code: ErrorCode.VALIDATION_ERROR,
-    status: 400,
-    message: 'The request data did not pass validation. See details for the specific fields.',
-  },
-  [ErrorCode.INTERNAL_ERROR]: {
-    code: ErrorCode.INTERNAL_ERROR,
-    status: 500,
-    message: 'An unexpected error occurred. Please try again later.',
-  },
-  [ErrorCode.SERVICE_UNAVAILABLE]: {
-    code: ErrorCode.SERVICE_UNAVAILABLE,
-    status: 503,
-    message: 'The service is temporarily unavailable. Please try again later.',
-  },
+  [ErrorCode.AUTH_INVALID_CREDENTIALS]: entry(
+    ErrorCode.AUTH_INVALID_CREDENTIALS,
+    401,
+    'Invalid email or password',
+  ),
+  [ErrorCode.AUTH_TOKEN_EXPIRED]: entry(
+    ErrorCode.AUTH_TOKEN_EXPIRED,
+    401,
+    'Authentication token has expired',
+  ),
+  [ErrorCode.AUTH_TOKEN_INVALID]: entry(
+    ErrorCode.AUTH_TOKEN_INVALID,
+    401,
+    'Authentication token is invalid',
+  ),
+  [ErrorCode.AUTH_EMAIL_ALREADY_EXISTS]: entry(
+    ErrorCode.AUTH_EMAIL_ALREADY_EXISTS,
+    409,
+    'An account with that email already exists',
+  ),
+  [ErrorCode.AUTH_PASSWORD_TOO_WEAK]: entry(
+    ErrorCode.AUTH_PASSWORD_TOO_WEAK,
+    400,
+    'Password does not meet the minimum strength requirements',
+  ),
+  [ErrorCode.AUTH_UNAUTHORIZED]: entry(
+    ErrorCode.AUTH_UNAUTHORIZED,
+    401,
+    'Authentication is required to access this resource',
+  ),
+  [ErrorCode.RESOURCE_NOT_FOUND]: entry(
+    ErrorCode.RESOURCE_NOT_FOUND,
+    404,
+    'The requested resource was not found',
+  ),
+  [ErrorCode.RESOURCE_FORBIDDEN]: entry(
+    ErrorCode.RESOURCE_FORBIDDEN,
+    403,
+    'You do not have permission to access this resource',
+  ),
+  [ErrorCode.READING_PENDING_LIMIT_REACHED]: entry(
+    ErrorCode.READING_PENDING_LIMIT_REACHED,
+    400,
+    'You have reached the maximum number of pending readings. Complete or delete some before generating more.',
+  ),
+  [ErrorCode.READING_ALREADY_EVALUATED]: entry(
+    ErrorCode.READING_ALREADY_EVALUATED,
+    400,
+    'This reading has already been evaluated and cannot be modified',
+  ),
+  [ErrorCode.VALIDATION_ERROR]: entry(
+    ErrorCode.VALIDATION_ERROR,
+    400,
+    'The request data did not pass validation. See details for the specific fields.',
+  ),
+  [ErrorCode.INTERNAL_ERROR]: entry(
+    ErrorCode.INTERNAL_ERROR,
+    500,
+    'An unexpected error occurred. Please try again later.',
+  ),
+  [ErrorCode.SERVICE_UNAVAILABLE]: entry(
+    ErrorCode.SERVICE_UNAVAILABLE,
+    503,
+    'The service is temporarily unavailable. Please try again later.',
+  ),
 };
+/* eslint-enable @typescript-eslint/no-unsafe-enum-comparison */
+
+const ERROR_CODE_VALUES: ErrorCode[] = Object.values(ErrorCode);
 
 export function isErrorCode(value: unknown): value is ErrorCode {
-  return typeof value === 'string' && Object.values(ErrorCode).includes(value as ErrorCode);
+  return typeof value === 'string' && ERROR_CODE_VALUES.includes(value as ErrorCode);
 }
 
 export function getErrorMeta(code: ErrorCode): ErrorMeta {

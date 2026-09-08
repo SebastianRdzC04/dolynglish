@@ -46,4 +46,3 @@ import { HealthModule } from './modules/health/health.module';
 export class AppModule {}
 
 export type { EnvSchema };
-

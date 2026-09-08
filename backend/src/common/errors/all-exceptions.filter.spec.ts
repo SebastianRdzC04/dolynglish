@@ -100,13 +100,9 @@ describe('AllExceptionsFilter (security audit)', () => {
 
   describe('CRITICAL: leaky errors must not leak to the client', () => {
     it('does not expose the internal exception message', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/test-filter/leaky-error')
-        .expect(500);
+      const res = await request(app.getHttpServer()).get('/test-filter/leaky-error').expect(500);
       expect(res.body.error.code).toBe('INTERNAL_ERROR');
-      expect(res.body.error.message).toBe(
-        'An unexpected error occurred. Please try again later.',
-      );
+      expect(res.body.error.message).toBe('An unexpected error occurred. Please try again later.');
       const stringified = JSON.stringify(res.body);
       expect(stringified).not.toContain('postgres://');
       expect(stringified).not.toContain('supersecret');
@@ -115,9 +111,7 @@ describe('AllExceptionsFilter (security audit)', () => {
     });
 
     it('does not expose the stack trace in the body', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/test-filter/leaky-error')
-        .expect(500);
+      const res = await request(app.getHttpServer()).get('/test-filter/leaky-error').expect(500);
       const stringified = JSON.stringify(res.body);
       expect(stringified).not.toMatch(/at\s+\w+\s+\(/);
       expect(stringified).not.toMatch(/\.ts:\d+:\d+/);

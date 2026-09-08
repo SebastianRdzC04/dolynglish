@@ -1,4 +1,4 @@
-import { RegisterDto, LoginDto } from './dto/auth.dto';
+import type { RegisterDto, LoginDto } from './dto/auth.dto';
 import type { PublicUser } from '../users/users.service';
 
 export interface AuthTokens {

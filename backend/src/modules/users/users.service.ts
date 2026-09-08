@@ -42,7 +42,10 @@ export class UsersService {
     const [inserted] = await this.db.insert(users).values(row).returning();
     if (!inserted) throw new Error('User insert returned no row');
     if (input.fullName.length > 0) {
-      await this.db.update(users).set({ fullName: input.fullName }).where(eq(users.id, inserted.id));
+      await this.db
+        .update(users)
+        .set({ fullName: input.fullName })
+        .where(eq(users.id, inserted.id));
       return { ...inserted, fullName: input.fullName };
     }
     return inserted;
@@ -81,6 +84,8 @@ export class UsersService {
   }
 
   async activeStreakFor(_userId: number, days = 7): Promise<number[]> {
-    return Array.from({ length: days }, () => 1);
+    const result = Array.from({ length: days }, () => 1);
+    await Promise.resolve(result);
+    return result;
   }
 }

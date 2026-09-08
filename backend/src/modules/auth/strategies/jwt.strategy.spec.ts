@@ -1,7 +1,7 @@
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
-import { AuthUser } from '../../../common/decorators/current-user.decorator';
+import type { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -30,7 +30,7 @@ describe('JwtStrategy', () => {
     }).compile();
 
     strategy = moduleRef.get(JwtStrategy);
-    usersService = moduleRef.get(UsersService) as jest.Mocked<Pick<UsersService, 'findById'>>;
+    usersService = moduleRef.get(UsersService);
   });
 
   it('returns the user when the JWT payload references a real user', async () => {

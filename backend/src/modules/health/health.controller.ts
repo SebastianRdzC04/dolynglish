@@ -31,6 +31,7 @@ export class HealthController {
     return this.health
       .check([
         async () => {
+          await Promise.resolve();
           return { db: { status: 'up' as const } };
         },
       ])

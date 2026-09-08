@@ -6,10 +6,16 @@ import { IsObject, IsOptional } from 'class-validator';
  * `ApiErrorDto.details.fields`.
  */
 export class ValidationFieldErrorDto {
-  @ApiProperty({ description: 'Field name in the request body, or "_root" for general errors', example: 'email' })
+  @ApiProperty({
+    description: 'Field name in the request body, or "_root" for general errors',
+    example: 'email',
+  })
   field!: string;
 
-  @ApiProperty({ description: 'Human-readable error message for this field', example: 'must be a valid email' })
+  @ApiProperty({
+    description: 'Human-readable error message for this field',
+    example: 'must be a valid email',
+  })
   message!: string;
 }
 
@@ -38,7 +44,8 @@ export class ApiErrorDto {
 
   @ApiProperty({
     required: false,
-    description: 'Optional context. For VALIDATION_ERROR contains a `fields` array of { field, message } objects.',
+    description:
+      'Optional context. For VALIDATION_ERROR contains a `fields` array of { field, message } objects.',
     type: Object,
     additionalProperties: true,
     example: { fields: [{ field: 'email', message: 'must be a valid email' }] },
