@@ -3,6 +3,32 @@
 Paso a paso para añadir un nuevo endpoint al backend respetando todas las
 convenciones del proyecto.
 
+## ⚠️ Antes de empezar — Regla #1
+
+**Este endpoint debe devolver el envelope `{ message, data, error? }`.**
+
+Ningún endpoint devuelve un objeto crudo. Cualquier controller termina
+en uno de estos dos patrones:
+
+```ts
+return apiOk('Mensaje en inglés', result);              // 2xx
+return apiCreated('Created', result);                    // 201
+throw new AppHttpException(ErrorCode.X, 'safe msg');     // 4xx/5xx
+```
+
+El envelope lo enforza el test e2e
+[openapi-envelope.e2e-spec.ts](../../backend/test/openapi-envelope.e2e-spec.ts)
+en CI. Si tu endpoint no lo respeta, el PR no se puede mergear.
+
+→ Contrato completo:
+[api-contracts.md](../conventions/api-contracts.md#tldr--regla-del-envelope)
+→ Helpers:
+[`apiOk`/`apiFail`](../../backend/src/common/types/api-response.type.ts)
+→ Catálogo en vivo: `http://localhost:3333/docs`
+
+Si la guía de abajo te pide escribir código que NO usa el envelope,
+algo está mal — vuelve a leer la regla.
+
 ## Paso 1: Crear el DTO
 
 Los DTOs viven en `src/modules/<feature>/dto/`. Si el feature no existe,
