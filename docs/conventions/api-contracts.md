@@ -3,6 +3,29 @@
 Reglas del contrato HTTP del backend. **Toda respuesta**, éxito o error,
 sigue un único envelope. Toda excepción se mapea a un código estable.
 
+## ⚠️ TL;DR — Regla del envelope
+
+**Toda respuesta del API — éxito o error — sigue este contrato:**
+
+```ts
+interface ApiResponse<T = unknown> {
+  message: string;
+  data: T;
+  error?: ApiError;
+}
+```
+
+Es **no negociable**. Ningún endpoint devuelve un objeto crudo; siempre
+va envuelto con `apiOk()` o `apiFail()`. Esta regla está enforced por
+[openapi-envelope.e2e-spec.ts](../../backend/test/openapi-envelope.e2e-spec.ts)
+en CI.
+
+→ Detalles: [Siguiente sección](#envelope-de-respuesta)
+→ Helpers:
+[`apiOk`/`apiFail`](../../backend/src/common/types/api-response.type.ts)
+→ Test que la enforce:
+[openapi-envelope](../../backend/test/openapi-envelope.e2e-spec.ts)
+
 ## Envelope de respuesta
 
 ```ts
