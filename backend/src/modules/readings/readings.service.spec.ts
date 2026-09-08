@@ -8,7 +8,6 @@ import { AiResponseParserService } from './ai-response-parser.service';
 import { PromptLogService } from './prompt-logs';
 import { UsersService } from '../users/users.service';
 import { DRIZZLE } from '../../database/database.tokens';
-import type { DrizzleDb } from '../../database/database.module';
 
 describe('ReadingsService', () => {
   let service: ReadingsService;
