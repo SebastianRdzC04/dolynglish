@@ -1,0 +1,35 @@
+name: docs-link-check
+
+on:
+  pull_request:
+    branches: [dev, prod]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/docs-link-check.yml'
+  push:
+    branches: [dev, prod]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/docs-link-check.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  link-check:
+    name: link-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Offline mode: only check that local file links resolve, don't
+          # hit the network. External link checking can be enabled later
+          # by removing --offline once the docs surface is stable.
+          args: --offline --no-progress --exclude-loopback --exclude-mail docs/**/*.md backend/**/*.md README.md
+          fail: true
